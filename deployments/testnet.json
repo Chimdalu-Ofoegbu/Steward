@@ -1,0 +1,14 @@
+{
+  "network": "casper-test",
+  "rpc": "https://node.testnet.casper.network/rpc",
+  "explorer": "https://testnet.cspr.live",
+  "chain_layer": "casper-js-sdk v5 (Node sidecar: agent/sidecar/chain.mjs)",
+  "agent": {
+    "public_key_hex": "01c85dcb19012ff343ef214d34ad00c9fe38ee3b3abbffdfff276de121cc87539e",
+    "account_hash": "932e021dc802796c446103994abe74e27d4791d445892ffc29e2c50982d290b6",
+    "algorithm": "ed25519",
+    "explorer_account": "https://testnet.cspr.live/account/01c85dcb19012ff343ef214d34ad00c9fe38ee3b3abbffdfff276de121cc87539e"
+  },
+  "contracts": {},
+  "validators": []
+}

@@ -3,6 +3,10 @@ secrets/
 *.pem
 *secret*
 __pycache__/
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
 .next/
 node_modules/
 *.sqlite
