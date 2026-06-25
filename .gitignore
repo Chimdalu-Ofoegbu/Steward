@@ -1,0 +1,17 @@
+.env
+secrets/
+*.pem
+*secret*
+__pycache__/
+.next/
+node_modules/
+*.sqlite
+*.db
+target/
+
+# GSD vendored engine (6MB+, regenerable via gsd install — keep history about the product)
+.claude/gsd-core/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
