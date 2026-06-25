@@ -4,6 +4,14 @@
 **Domain:** Casper 2.0 "Condor" testnet chain layer — SDK/CLI selection, transaction model, native auction, keypair/funding
 **Confidence:** HIGH (chain layer + RPC live-verified) / MEDIUM (faucet automation, exact delegate flag spelling)
 
+> ## ⚠️ POST-RESEARCH UPDATE (2026-06-25) — CHAIN LAYER PIVOTED to a Node `casper-js-sdk` sidecar
+>
+> The recommended **`casper-client` v5 Rust CLI does NOT build on Windows**: `casper-types` v5.0.1 calls Unix-only `OpenOptions::mode(0o600)` (compile errors E0432/E0433/E0599), and casper-client-rs ships **no prebuilt Windows binary** (latest release v5.0.1 has 0 downloadable assets).
+>
+> **New decision: the chain layer is a Node sidecar using `casper-js-sdk` v5 (latest), invoked from the Python brain via `subprocess`.** Verified on THIS Windows box (Node v24.15): `npm install casper-js-sdk` → 65 pkgs, 0 vulns, **no native build step**; `require('casper-js-sdk')` loads and exposes `RpcClient`, `HttpHandler`, `PrivateKey`/`PublicKey`/`KeyAlgorithm`, the native Casper-2.0 builders `NativeTransferBuilder` + `NativeDelegateBuilder`/`NativeUndelegateBuilder`/`NativeRedelegateBuilder`, `QueryBalanceRequest`/`PurseIdentifier`, and `makeCep18TransferTransaction` (RWA stretch).
+>
+> **Net:** one chain library (`casper-js-sdk` v5) shared by BOTH the agent sidecar AND the Phase-5 frontend. Python brain stays in Python and shells out to `agent/sidecar/chain.mjs <cmd> …` (keygen | balance | transfer | delegate | confirm), parsing JSON — same wrapper shape this doc describes, different backend. **Everywhere below that says "casper-client", read "Node casper-js-sdk sidecar".** The transfer/delegate/balance semantics, the testnet RPC/faucet/explorer facts, and the Phase-1 acceptance bar are all UNCHANGED. The two MEDIUM-confidence open risks (exact CLI flag spelling, query_balance purse shape) are now resolved against the casper-js-sdk v5 API instead.
+
 <user_constraints>
 ## User Constraints (from CONTEXT.md)
 

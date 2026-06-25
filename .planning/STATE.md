@@ -55,6 +55,7 @@ Recent decisions affecting current work:
 
 - Milestone v1.0 (Casper Agentic Buildathon 2026): 6 phases mirror BUILD-PROMPT Phase 0→5; MVP chain protected, v2 stretch cut first.
 - Phase 1: Casper 2.0 "Condor" toolchain is the #1 risk — verify against LIVE docs + a live testnet call before any product logic (non-negotiable gate).
+- **Phase 1 RESOLVED (2026-06-25, live-verified):** chain layer = **Node `casper-js-sdk` v5 sidecar called from the Python brain via subprocess**. Two fallbacks were forced: pycspr 1.2.0 is Deploy-only (can't do Casper 2.0 delegation), AND the casper-client v5 Rust CLI won't compile on Windows (`casper-types` uses Unix-only `mode(0o600)`) with no prebuilt Windows binary. casper-js-sdk v5 verified installs+loads on this Windows/Node v24 box with native Casper-2.0 tx builders (`NativeTransferBuilder`/`NativeDelegateBuilder`) — and is SHARED with the Phase 5 frontend (one chain lib). Wrapper: `agent/src/steward/chain.py` → `agent/sidecar/chain.mjs`. RPC `https://node.testnet.casper.network/rpc`, network `casper-test`, faucet `testnet.cspr.live/tools/faucet` (wallet-gated/manual), explorer `testnet.cspr.live`. Odra 2.8.1 for Phase 2.
 - Cross-cutting: testnet only (never mainnet); Casper is Rust→WASM (Odra preferred), not EVM; Verifier proves integrity/provenance, NOT reproducibility; risk limits enforced in deterministic code after the model responds.
 
 ### Pending Todos
@@ -69,7 +70,8 @@ None yet.
 
 - External dependencies required before/early in build: a local gitignored `.env` with `ANTHROPIC_API_KEY` + `PINATA_JWT`, and a funded Casper testnet keypair (faucet) — needed for Phase 1.
 - Hard deadline: ~June 30 2026 (submit a day before the July 1 cutoff). If any phase slips, cut a stretch (Phase 6 tail), never the MVP chain.
-- Phase 1 risk: pycspr may lag Casper 2.0 transactions — switch to casper-client CLI / Node casper-js-sdk fallback at the gate, not later.
+- **USER BLOCKER (faucet):** the testnet faucet (`testnet.cspr.live/tools/faucet`) is Casper-Wallet-gated, once-per-account, with NO public HTTP API — programmatic funding is not possible. Need the user to fund the generated agent public key before the Phase 1 self-transfer proof can run.
+- **Still needed from user:** `ANTHROPIC_API_KEY` + `PINATA_JWT` in a local `.env` (for Phase 3). (pycspr-lag risk is now RESOLVED — see Decisions.)
 
 ## Deferred Items
 
