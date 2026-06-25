@@ -21,11 +21,11 @@ See: .planning/PROJECT.md (updated 2026-06-25)
 ## Current Position
 
 Phase: 1 of 6 (Toolchain & Reality Check)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-06-25 — Roadmap created (6 v1 phases, 28/28 requirements mapped)
+Plan: 01-01 ✅ complete · 01-02 ⛔ BLOCKED on manual faucet funding
+Status: AWAITING USER — fund agent key 01c85dcb…87539e at https://testnet.cspr.live/tools/faucet (then I run agent/probe.py)
+Last activity: 2026-06-25 — Chain layer built + verified live on testnet (casper-js-sdk v5 sidecar + chain.py); ed25519 agent keypair generated; balance/account-hash confirmed
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] ~8% (Phase 1 wave 1 of 6 phases)
 
 ## Performance Metrics
 
