@@ -20,12 +20,12 @@ See: .planning/PROJECT.md (updated 2026-06-25)
 
 ## Current Position
 
-Phase: 1 of 6 (Toolchain & Reality Check)
-Plan: 01-01 ✅ complete · 01-02 ⛔ BLOCKED on manual faucet funding
-Status: AWAITING USER — fund agent key 01c85dcb…87539e at https://testnet.cspr.live/tools/faucet (then I run agent/probe.py)
-Last activity: 2026-06-25 — Chain layer built + verified live on testnet (casper-js-sdk v5 sidecar + chain.py); ed25519 agent keypair generated; balance/account-hash confirmed
+Phase: 1 of 6 ✅ COMPLETE → starting Phase 2 (Journal Contract)
+Plan: 01-01 ✅ · 01-02 ✅ — write path proven live (txn 70b234fb…03df, 2.5 CSPR transferred + confirmed Success)
+Status: Phase 1 gate PASSED. Agent funded (5000 CSPR). Next: Phase 2 — on-chain Journal attestation contract (Odra/Rust).
+Last activity: 2026-06-25 — Phase 1 complete: casper-js-sdk sidecar chain layer verified end-to-end on testnet
 
-Progress: [█░░░░░░░░░] ~8% (Phase 1 wave 1 of 6 phases)
+Progress: [██░░░░░░░░] ~17% (1 of 6 phases complete)
 
 ## Performance Metrics
 

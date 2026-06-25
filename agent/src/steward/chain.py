@@ -20,7 +20,8 @@ from dotenv import load_dotenv
 
 # Resolve everything against the repo root so chain.py works from any cwd.
 _REPO = Path(__file__).resolve().parents[3]  # .../Steward
-load_dotenv(_REPO / ".env")  # no-op if .env absent; real secrets only live there
+_AGENT = Path(__file__).resolve().parents[2]  # .../Steward/agent
+load_dotenv(_AGENT / ".env")  # real secrets live ONLY here (gitignored); no-op if absent
 
 RPC = os.environ.get("CASPER_NODE_RPC", "https://node.testnet.casper.network/rpc")
 NETWORK = os.environ.get("CASPER_NETWORK_NAME", "casper-test")

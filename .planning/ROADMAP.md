@@ -12,7 +12,7 @@ Steward is an autonomous AI agent that manages a CSPR treasury natively on the C
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Toolchain & Reality Check** - Verify Casper 2.0 "Condor" toolchain against live docs + a live testnet call before any product logic (non-negotiable gate)
+- [x] **Phase 1: Toolchain & Reality Check** - Verify Casper 2.0 "Condor" toolchain against live docs + a live testnet call before any product logic (non-negotiable gate)
 - [ ] **Phase 2: Journal Contract** - Deploy the agent-only on-chain attestation contract (Rust/Odra) — the verifiable-agent centerpiece
 - [ ] **Phase 3: Agent Loop — Perceive → Decide → Attest** - The agent perceives live state, emits a validated decision, pins reasoning to IPFS, and writes a matching on-chain attestation
 - [ ] **Phase 4: Act On-chain — Native Staking** - The agent executes real native-auction staking from its own decisions, with risk limits enforced in code and attestation-before-action
@@ -33,8 +33,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Install + verify casper-client v5, lock real put-txn flags, scaffold agent/ package + chain.py wrapper, generate agent keypair (TOOL-01/02/03)
-- [ ] 01-02-PLAN.md — Manual faucet funding checkpoint, probe.py acceptance run (balance + self-transfer + confirm + explorer), reality report w/ deltas (TOOL-02/03/04)
+- [x] 01-01-PLAN.md — chain layer (casper-js-sdk v5 sidecar) + agent keypair (TOOL-01/02/03)
+- [x] 01-02-PLAN.md — faucet funding + probe.py write-path proof + reality report (TOOL-02/03/04)
 
 ### Phase 2: Journal Contract
 **Goal**: Deploy the on-chain attestation contract — agent-only `record(...)` with frontend-readable history — so every later decision can be journaled verifiably. This small, safe contract is the verifiable-agent centerpiece; even if every other contract slips, this plus the loop plus real staking is a complete demo.
@@ -117,7 +117,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Toolchain & Reality Check | 0/2 | Not started | - |
+| 1. Toolchain & Reality Check | 2/2 | Complete | 2026-06-25 |
 | 2. Journal Contract | 0/TBD | Not started | - |
 | 3. Agent Loop — Perceive → Decide → Attest | 0/TBD | Not started | - |
 | 4. Act On-chain — Native Staking | 0/TBD | Not started | - |
