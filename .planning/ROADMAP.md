@@ -30,10 +30,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. A Python script reads the agent account's CSPR balance from testnet AND submits + confirms a tiny self-transfer (via pycspr, or a documented fallback: casper-client CLI / Node casper-js-sdk sidecar)
   3. The agent's testnet keypair is generated, funded from the faucet, and confirmed on the explorer (testnet only — never mainnet)
   4. A written decision records which chain-layer library is used, and any deltas from the BUILD-PROMPT's assumptions are explicitly flagged before proceeding
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
+- [ ] 01-01-PLAN.md — Install + verify casper-client v5, lock real put-txn flags, scaffold agent/ package + chain.py wrapper, generate agent keypair (TOOL-01/02/03)
+- [ ] 01-02-PLAN.md — Manual faucet funding checkpoint, probe.py acceptance run (balance + self-transfer + confirm + explorer), reality report w/ deltas (TOOL-02/03/04)
 
 ### Phase 2: Journal Contract
 **Goal**: Deploy the on-chain attestation contract — agent-only `record(...)` with frontend-readable history — so every later decision can be journaled verifiably. This small, safe contract is the verifiable-agent centerpiece; even if every other contract slips, this plus the loop plus real staking is a complete demo.
@@ -116,7 +117,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Toolchain & Reality Check | 0/TBD | Not started | - |
+| 1. Toolchain & Reality Check | 0/2 | Not started | - |
 | 2. Journal Contract | 0/TBD | Not started | - |
 | 3. Agent Loop — Perceive → Decide → Attest | 0/TBD | Not started | - |
 | 4. Act On-chain — Native Staking | 0/TBD | Not started | - |
