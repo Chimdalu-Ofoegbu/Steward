@@ -9,8 +9,9 @@ node_modules/
 *.db
 target/
 
-# GSD vendored engine (6MB+, regenerable via gsd install — keep history about the product)
-.claude/gsd-core/
+# GSD tooling + local settings (regenerable; machine-specific paths; not the product).
+# The agentic-build trail that judges care about lives in tracked .planning/.
+.claude/
 
 # OS / editor cruft
 .DS_Store
