@@ -16,16 +16,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-25)
 
 **Core value:** Every on-chain action the agent takes is preceded by an on-chain attestation of *why* — a verifiable, replayable "agent decision journal" on Casper.
-**Current focus:** Phase 6 - Demo, README & polish (Phases 1-5 complete)
+**Current focus:** SUBMISSION READY (6/6 phases; user records the demo video)
 
 ## Current Position
 
-Phase: 5 of 6 COMPLETE -> starting Phase 6 (Demo + polish)
-Plan: Frontend live - dashboard/feed/verifier read testnet live; verifier hash-match ok:true; npm run build passes
-Status: Phases 1-5 done - full MVP + live frontend. Only Phase 6 (demo video, README, deployments manifest, optional stretch) remains.
-Last activity: 2026-06-26 - Phase 5 complete: live Next.js dashboard + decision feed + integrity verifier built to the design
+Phase: 6 of 6 COMPLETE - submission deliverables done
+Plan: README + DEMO-SCRIPT + deployments manifest delivered; MVP submission-ready
+Status: ALL 6 phases complete - full MVP live on testnet + frontend + README + demo script. REMAINING (user): record the ~2-3 min demo video (docs/DEMO-SCRIPT.md); optional v2 stretch if desired.
+Last activity: 2026-06-26 - Phase 6 complete: README + demo script + manifest; Steward is submission-ready
 
-Progress: [########--] ~83% (5 of 6 phases complete)
+Progress: [##########] 100% MVP (6/6 phases) - demo video is the only user-action left
 
 ## Performance Metrics
 

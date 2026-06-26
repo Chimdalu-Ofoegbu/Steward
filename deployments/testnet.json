@@ -30,12 +30,17 @@
       "public_key_hex": "0106ca7c39cd272dbf21a86eeb3b36b7c26e2e9b94af64292419f7862936bca2ca",
       "role": "delegated",
       "first_delegate_txn": "992fa9f63e5c5378483ac17929e068e0d38d5c2172ef7f98dbc9ac266f1b12ea",
-      "delegated_cspr": 1700.0,
+      "delegated_cspr": 1700,
       "explorer": "https://testnet.cspr.live/validator/0106ca7c39cd272dbf21a86eeb3b36b7c26e2e9b94af64292419f7862936bca2ca"
     }
   ],
   "phase4_proof": {
-    "requirements": ["STAK-01", "STAK-02", "STAK-03", "STAK-04"],
+    "requirements": [
+      "STAK-01",
+      "STAK-02",
+      "STAK-03",
+      "STAK-04"
+    ],
     "attestation_txn": "cdc4c7f2f2aa114c949cdec8cacd9d9704da4f0731ebac7450ee1d78387fb1bf",
     "attestation_explorer": "https://testnet.cspr.live/transaction/cdc4c7f2f2aa114c949cdec8cacd9d9704da4f0731ebac7450ee1d78387fb1bf",
     "staking_txn": "992fa9f63e5c5378483ac17929e068e0d38d5c2172ef7f98dbc9ac266f1b12ea",
@@ -45,5 +50,20 @@
     "delegations_before": 0,
     "delegations_after": 1,
     "note": "Attestation precedes the staking deploy (STAK-04); risk gate enforced in code after the model (STAK-02)."
+  },
+  "phase3_proof": {
+    "requirements": [
+      "AGNT-01",
+      "AGNT-02",
+      "AGNT-03",
+      "AGNT-04",
+      "AGNT-05",
+      "AGNT-06"
+    ],
+    "attestation_txn": "71d9efcb21c886c65c470e07878420cc19b7a045d604fcd90932ddb444dd0d65",
+    "decision_cid": "bafkreig5moismks3oowxrrce55r2cx2i24clnmdvgl3pfa2ohrtyz76sbi",
+    "decision_hash": "dd6391262a5b73ad78c444ef63a15f48d704b6b07532f6f2834e3c678cffd20a",
+    "integrity_verified": true,
+    "note": "on-chain hash == sha256(raw IPFS-pinned bytes) - the verifiable decision journal property"
   }
 }
