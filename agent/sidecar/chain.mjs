@@ -32,6 +32,11 @@ const {
   NativeDelegateBuilder,
   NativeUndelegateBuilder,
   NativeRedelegateBuilder,
+  SessionBuilder,
+  ContractCallBuilder,
+  Args,
+  CLValue,
+  EntityIdentifier,
 } = pkg;
 
 const RPC = process.env.CASPER_NODE_RPC || "https://node.testnet.casper.network/rpc";
@@ -181,6 +186,77 @@ async function main() {
     } catch (e) {
       return out({ found: false, success: false, error: short(e) });
     }
+  }
+
+  if (verb === "deploy-wasm") {
+    // Deploy an Odra contract WASM as a Casper 2.0 install session.
+    // Odra's installer reads these odra_cfg_* args; init() takes no args (agent = deployer).
+    const wasmPath = req(a[0], "wasm_path");
+    const pkgKeyName = a[1] || "steward_journal_package_hash";
+    const paymentMotes = a[2] ? Number(a[2]) : 500_000_000_000; // 500 CSPR default
+    const wasm = new Uint8Array(fs.readFileSync(wasmPath));
+    const signer = loadSigner();
+    const args = Args.fromMap({
+      odra_cfg_package_hash_key_name: CLValue.newCLString(pkgKeyName),
+      odra_cfg_allow_key_override: CLValue.newCLValueBool(true),
+      odra_cfg_is_upgradable: CLValue.newCLValueBool(false),
+      odra_cfg_is_upgrade: CLValue.newCLValueBool(false),
+    });
+    const tx = new SessionBuilder()
+      .from(signer.publicKey)
+      .wasm(wasm)
+      .installOrUpgrade()
+      .runtimeArgs(args)
+      .chainName(NETWORK)
+      .payment(paymentMotes)
+      .build();
+    tx.sign(signer);
+    const res = await rpc().putTransaction(tx);
+    return out({ transaction_hash: hashHex(res.transactionHash), package_key_name: pkgKeyName });
+  }
+
+  if (verb === "named-key") {
+    // Read a named key off the agent's account entity (e.g. the deployed package hash).
+    const name = req(a[0], "named_key");
+    const signer = loadSigner();
+    const res = await rpc().getLatestEntity(EntityIdentifier.fromPublicKey(signer.publicKey));
+    const ent = res?.rawJSON?.entity ?? {};
+    const acct = ent.Account ?? ent.AddressableEntity ?? ent;
+    const list = Array.isArray(acct.named_keys) ? acct.named_keys : ent.named_keys ?? [];
+    const found = (Array.isArray(list) ? list : []).find((k) => k.name === name);
+    return out({
+      name,
+      key: found ? found.key : null,
+      available: (Array.isArray(list) ? list : []).map((k) => k.name),
+    });
+  }
+
+  if (verb === "journal-record") {
+    // Call the deployed Journal's record() entry point (agent-only). For Phase 2 smoke
+    // test + reused by the Phase 3 agent loop.
+    // journal-record <package_hash> <decision_hash> <ipfs_cid> <action_kind> <epoch> [payment]
+    const pkgHash = req(a[0], "package_hash").replace(/^(hash-|package-)/, "");
+    const decisionHash = req(a[1], "decision_hash");
+    const ipfsCid = req(a[2], "ipfs_cid");
+    const actionKind = req(a[3], "action_kind");
+    const epoch = req(a[4], "epoch");
+    const paymentMotes = a[5] ? Number(a[5]) : 5_000_000_000; // 5 CSPR default
+    const signer = loadSigner();
+    const args = Args.fromMap({
+      decision_hash: CLValue.newCLString(decisionHash),
+      ipfs_cid: CLValue.newCLString(ipfsCid),
+      action_kind: CLValue.newCLString(actionKind),
+      epoch: CLValue.newCLUint64(epoch),
+    });
+    const tx = new ContractCallBuilder()
+      .from(signer.publicKey)
+      .byPackageHash(pkgHash)
+      .entryPoint("record")
+      .runtimeArgs(args)
+      .chainName(NETWORK)
+      .payment(paymentMotes)
+      .build();
+    return out(await submitSigned(tx, signer));
   }
 
   throw new Error("unknown verb: " + verb);

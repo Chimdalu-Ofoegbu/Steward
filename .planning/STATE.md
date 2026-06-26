@@ -16,16 +16,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-25)
 
 **Core value:** Every on-chain action the agent takes is preceded by an on-chain attestation of *why* — a verifiable, replayable "agent decision journal" on Casper.
-**Current focus:** Phase 1 — Toolchain & Reality Check
+**Current focus:** Phase 3 - Agent Loop (Phases 1-2 complete)
 
 ## Current Position
 
-Phase: 1 of 6 ✅ COMPLETE → starting Phase 2 (Journal Contract)
-Plan: 01-01 ✅ · 01-02 ✅ — write path proven live (txn 70b234fb…03df, 2.5 CSPR transferred + confirmed Success)
-Status: Phase 1 gate PASSED. Agent funded (5000 CSPR). Next: Phase 2 — on-chain Journal attestation contract (Odra/Rust).
-Last activity: 2026-06-25 — Phase 1 complete: casper-js-sdk sidecar chain layer verified end-to-end on testnet
+Phase: 2 of 6 COMPLETE -> starting Phase 3 (Agent Loop)
+Plan: Journal deployed (pkg 506497e9...3aa2); agent record() live (txn e16d7867...5255)
+Status: Phases 1-2 done - chain layer + on-chain Journal both proven live. Next: Phase 3 agent loop (needs ANTHROPIC + PINATA keys in agent/.env).
+Last activity: 2026-06-26 - Phase 2 complete: Odra Journal deployed to testnet + first agent attestation recorded on-chain
 
-Progress: [██░░░░░░░░] ~17% (1 of 6 phases complete)
+Progress: [###-------] ~33% (2 of 6 phases complete)
 
 ## Performance Metrics
 

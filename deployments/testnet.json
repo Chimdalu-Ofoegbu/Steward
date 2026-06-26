@@ -10,6 +10,20 @@
     "algorithm": "ed25519",
     "explorer_account": "https://testnet.cspr.live/account/01c85dcb19012ff343ef214d34ad00c9fe38ee3b3abbffdfff276de121cc87539e"
   },
-  "contracts": {},
+  "contracts": {
+    "journal": {
+      "package_hash": "hash-506497e9dc4607460891120b7bccc8b182686ab2207a629cbb57204d5bab3aa2",
+      "package_hash_hex": "506497e9dc4607460891120b7bccc8b182686ab2207a629cbb57204d5bab3aa2",
+      "package_key_name": "steward_journal_package_hash",
+      "deploy_txn": "7a9deaa0acb21b985ed812acb1b912fc74f3b82a93721f2c7a559c429d1d968c",
+      "first_record_txn": "e16d7867f2bba9fadc9edd85eada5fe83eb10514686ab8171d0e1e01d26a5255",
+      "entry_points": [
+        "record",
+        "count",
+        "get_record",
+        "agent"
+      ]
+    }
+  },
   "validators": []
 }
