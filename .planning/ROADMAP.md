@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Journal Contract** - Deploy the agent-only on-chain attestation contract (Rust/Odra) — the verifiable-agent centerpiece
 - [x] **Phase 3: Agent Loop — Perceive → Decide → Attest** - The agent perceives live state, emits a validated decision, pins reasoning to IPFS, and writes a matching on-chain attestation
 - [x] **Phase 4: Act On-chain — Native Staking** - The agent executes real native-auction staking from its own decisions, with risk limits enforced in code and attestation-before-action
-- [ ] **Phase 5: Frontend — Live Dashboard, Decision Feed, Verifier** - Live dashboard + decision feed + honest integrity/provenance verifier, reading testnet live, built to the Claude Design handoff
+- [x] **Phase 5: Frontend — Live Dashboard, Decision Feed, Verifier** - Live dashboard + decision feed + honest integrity/provenance verifier, reading testnet live, built to the Claude Design handoff
 - [ ] **Phase 6: Stretch, Polish & Demo** - Submission deliverables (demo video, README, deployments manifest); optional v2 stretch attempted only if the MVP is green
 
 ## Phase Details
@@ -121,5 +121,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Journal Contract | 1/1 | Complete | 2026-06-26 |
 | 3. Agent Loop — Perceive → Decide → Attest | 1/1 | Complete | 2026-06-26 |
 | 4. Act On-chain — Native Staking | 1/1 | Complete | 2026-06-26 |
-| 5. Frontend — Live Dashboard, Decision Feed, Verifier | 0/TBD | Not started | - |
+| 5. Frontend — Live Dashboard, Decision Feed, Verifier | 1/1 | Complete | 2026-06-26 |
 | 6. Stretch, Polish & Demo | 0/TBD | Not started | - |

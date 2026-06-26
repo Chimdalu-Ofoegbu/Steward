@@ -16,16 +16,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-25)
 
 **Core value:** Every on-chain action the agent takes is preceded by an on-chain attestation of *why* — a verifiable, replayable "agent decision journal" on Casper.
-**Current focus:** Phase 5 - Frontend (Phases 1-4 complete; MVP chain done)
+**Current focus:** Phase 6 - Demo, README & polish (Phases 1-5 complete)
 
 ## Current Position
 
-Phase: 4 of 6 COMPLETE -> starting Phase 5 (Frontend)
-Plan: Real staking live - delegate 1700 CSPR executed (txn 992fa9f6...12ea), delegation_count 0->1; risk limits enforced in code
-Status: Phases 1-4 done - the FULL MVP chain works end-to-end (perceive->decide->attest->stake). Next: Phase 5 frontend.
-Last activity: 2026-06-26 - Phase 4 complete: agent executed a real on-chain delegation within code-enforced risk limits
+Phase: 5 of 6 COMPLETE -> starting Phase 6 (Demo + polish)
+Plan: Frontend live - dashboard/feed/verifier read testnet live; verifier hash-match ok:true; npm run build passes
+Status: Phases 1-5 done - full MVP + live frontend. Only Phase 6 (demo video, README, deployments manifest, optional stretch) remains.
+Last activity: 2026-06-26 - Phase 5 complete: live Next.js dashboard + decision feed + integrity verifier built to the design
 
-Progress: [######----] ~67% (4 of 6 phases complete)
+Progress: [########--] ~83% (5 of 6 phases complete)
 
 ## Performance Metrics
 
