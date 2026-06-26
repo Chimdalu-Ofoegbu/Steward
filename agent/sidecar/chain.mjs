@@ -12,6 +12,7 @@
 //   redelegate <old_hex> <new_hex> <motes> -> {transaction_hash}
 //   undelegate <validator_hex> <motes> -> {transaction_hash}
 //   confirm <transaction_hash>         -> {found, success, error?}
+//   auction-info [agent_public_key_hex] -> {validators:[{public_key,weight}], delegations:[{validator,amount}], ...}
 //
 // Env: CASPER_NODE_RPC, CASPER_NETWORK_NAME, AGENT_SECRET_KEY_PATH
 // Output: a single JSON object on stdout. Errors -> JSON {error} on stderr, exit 1.
@@ -91,7 +92,7 @@ async function main() {
 
   if (!verb || verb === "--help" || verb === "-h") {
     process.stdout.write(
-      "verbs: keygen | account-hash | balance | transfer | delegate | redelegate | undelegate | confirm\n"
+      "verbs: keygen | account-hash | balance | transfer | delegate | redelegate | undelegate | confirm | auction-info | deploy-wasm | named-key | journal-record\n"
     );
     return;
   }
@@ -186,6 +187,85 @@ async function main() {
     } catch (e) {
       return out({ found: false, success: false, error: short(e) });
     }
+  }
+
+  if (verb === "auction-info") {
+    // Read the native auction: active validators by weight + (optionally) the
+    // agent's own delegations. Defensive about SDK/RPC shape variance — dig the
+    // rawJSON auction_state for bids + era_validators.
+    const agentHex = a[0] || null;
+    const res = await rpc().getLatestAuctionInfo();
+    const raw = res?.rawJSON ?? res?.raw_json ?? res ?? {};
+    const state = raw.auction_state ?? raw.auctionState ?? raw.AuctionState ?? {};
+    const eraValidators = Array.isArray(state.era_validators)
+      ? state.era_validators
+      : Array.isArray(state.eraValidators)
+        ? state.eraValidators
+        : [];
+    const bids = Array.isArray(state.bids) ? state.bids : [];
+
+    // Top validators by weight: prefer era_validators[*].validator_weights (the
+    // active set). Use the highest era_id present, else flatten what we have.
+    let weights = [];
+    if (eraValidators.length) {
+      let chosen = eraValidators[0];
+      for (const ev of eraValidators) {
+        const a = Number(ev?.era_id ?? ev?.eraId ?? 0);
+        const b = Number(chosen?.era_id ?? chosen?.eraId ?? 0);
+        if (a > b) chosen = ev;
+      }
+      const vw = chosen?.validator_weights ?? chosen?.validatorWeights ?? [];
+      weights = (Array.isArray(vw) ? vw : []).map((w) => ({
+        public_key: w.public_key ?? w.publicKey ?? null,
+        weight: String(w.weight ?? "0"),
+      }));
+    }
+    // Fallback to validator bids' staked_amount if era weights are absent.
+    if (!weights.length && bids.length) {
+      for (const b of bids) {
+        const v = b?.bid?.Validator;
+        if (v && (b.public_key || v.validator_public_key)) {
+          weights.push({
+            public_key: b.public_key ?? v.validator_public_key,
+            weight: String(v.staked_amount ?? "0"),
+          });
+        }
+      }
+    }
+    weights.sort((x, y) => {
+      const dx = BigInt(x.weight || "0");
+      const dy = BigInt(y.weight || "0");
+      return dx < dy ? 1 : dx > dy ? -1 : 0;
+    });
+    const validators = weights.slice(0, 20);
+
+    // The agent's current delegations: Delegator bids whose delegator_kind == agent.
+    let delegations = [];
+    if (agentHex) {
+      const want = agentHex.toLowerCase();
+      for (const b of bids) {
+        const d = b?.bid?.Delegator;
+        if (!d) continue;
+        const kind = d.delegator_kind ?? d.delegatorKind ?? {};
+        const who = (kind.PublicKey ?? kind.public_key ?? d.delegator_public_key ?? "")
+          .toString()
+          .toLowerCase();
+        if (who === want) {
+          delegations.push({
+            validator: d.validator_public_key ?? d.validatorPublicKey ?? null,
+            amount_motes: String(d.staked_amount ?? "0"),
+          });
+        }
+      }
+    }
+
+    return out({
+      validators,
+      delegations,
+      validator_count: validators.length,
+      state_root_hash: state.state_root_hash ?? state.stateRootHash ?? null,
+      block_height: state.block_height ?? state.blockHeight ?? null,
+    });
   }
 
   if (verb === "deploy-wasm") {

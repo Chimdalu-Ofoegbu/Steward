@@ -10,6 +10,7 @@ casper-client Rust CLI does not build on Windows. See
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import subprocess
@@ -31,6 +32,34 @@ _SK_ABS = _sk if os.path.isabs(_sk) else str((_REPO / _sk).resolve())
 
 _sidecar = os.environ.get("STEWARD_SIDECAR", "agent/sidecar/chain.mjs")
 _SIDECAR_ABS = _sidecar if os.path.isabs(_sidecar) else str((_REPO / _sidecar).resolve())
+
+_DEPLOYMENTS = _REPO / "deployments" / "testnet.json"
+
+
+def _deployments() -> dict:
+    """Load deployments/testnet.json (contract hashes, agent key, validators)."""
+    try:
+        return json.loads(_DEPLOYMENTS.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def journal_package_hash() -> str:
+    """The deployed Journal package hash (hex, no prefix). Env override wins."""
+    env = os.environ.get("JOURNAL_CONTRACT_HASH")
+    if env:
+        return env.replace("hash-", "").replace("package-", "")
+    pkg = _deployments().get("contracts", {}).get("journal", {})
+    h = pkg.get("package_hash_hex") or pkg.get("package_hash", "")
+    return h.replace("hash-", "").replace("package-", "")
+
+
+def agent_public_key_hex() -> str:
+    """The Steward agent's public key (hex) from deployments/testnet.json."""
+    return os.environ.get(
+        "AGENT_PUBLIC_KEY_HEX",
+        _deployments().get("agent", {}).get("public_key_hex", ""),
+    )
 
 
 class ChainError(RuntimeError):
@@ -68,6 +97,14 @@ def account_hash(public_key_hex: str) -> str:
     return _run("account-hash", public_key_hex)["account_hash_hex"]
 
 
+def get_auction(agent_pubkey_hex: str | None = None) -> dict:
+    """Native auction snapshot: top validators by weight + (optionally) the agent's
+    delegations. Returns {validators: [{public_key, weight}], delegations: [...],
+    validator_count, block_height}."""
+    agent = agent_pubkey_hex or agent_public_key_hex()
+    return _run("auction-info", agent, timeout=90)
+
+
 # ── Writes (sign with AGENT_SECRET_KEY_PATH) ─────────────────────────────────
 def transfer(target_public_key_hex: str, amount_motes: int) -> str:
     """Submit a native CSPR transfer; return the transaction hash."""
@@ -87,6 +124,33 @@ def undelegate(validator_public_key_hex: str, amount_motes: int) -> str:
 def redelegate(old_validator_hex: str, new_validator_hex: str, amount_motes: int) -> str:
     """Phase 4 (STAK-03): move stake between validators; return the transaction hash."""
     return _run("redelegate", old_validator_hex, new_validator_hex, amount_motes, timeout=120)["transaction_hash"]
+
+
+def record_decision(payload: dict, action_kind: str, epoch: int) -> dict:
+    """Attest a decision on-chain (AGNT-04/05): pin the payload to IPFS, compute
+    sha256 of the EXACT pinned bytes, then call the Journal `record(...)` entry
+    point via the sidecar `journal-record` verb.
+
+    `payload` is the full {decision, reasoning, observed_state} snapshot. Returns
+    {cid, hash, txn} where `hash` is the hex decision_hash recorded on-chain ==
+    sha256 of the bytes pinned at `cid` (so any client can verify by hashing the
+    raw gateway bytes — the A.4 honesty rule).
+    """
+    from . import attest  # local import: attest pulls httpx; keep chain import light
+
+    jwt = os.environ.get("PINATA_JWT")
+    if not jwt:
+        raise ChainError("PINATA_JWT not set — cannot pin attestation")
+
+    cid, pinned = asyncio.run(attest.pin_json(payload, jwt))
+    hex_hash = attest.decision_hash(pinned).hex()
+
+    pkg = journal_package_hash()
+    if not pkg:
+        raise ChainError("journal package hash unknown (deployments/testnet.json)")
+
+    res = _run("journal-record", pkg, hex_hash, cid, action_kind, int(epoch), timeout=120)
+    return {"cid": cid, "hash": hex_hash, "txn": res["transaction_hash"]}
 
 
 # ── Confirmation ─────────────────────────────────────────────────────────────
