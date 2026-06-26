@@ -16,16 +16,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-25)
 
 **Core value:** Every on-chain action the agent takes is preceded by an on-chain attestation of *why* — a verifiable, replayable "agent decision journal" on Casper.
-**Current focus:** Phase 3 - Agent Loop (Phases 1-2 complete)
+**Current focus:** Phase 4 - Act On-chain: Native Staking (Phases 1-3 complete)
 
 ## Current Position
 
-Phase: 2 of 6 COMPLETE -> starting Phase 3 (Agent Loop)
-Plan: Journal deployed (pkg 506497e9...3aa2); agent record() live (txn e16d7867...5255)
-Status: Phases 1-2 done - chain layer + on-chain Journal both proven live. Next: Phase 3 agent loop (needs ANTHROPIC + PINATA keys in agent/.env).
-Last activity: 2026-06-26 - Phase 2 complete: Odra Journal deployed to testnet + first agent attestation recorded on-chain
+Phase: 3 of 6 COMPLETE -> starting Phase 4 (Native Staking)
+Plan: Full agent loop live (decide->IPFS->Journal); integrity VERIFIED (on-chain hash == sha256 pinned bytes); record txn 71d9efcb...0d65
+Status: Phases 1-3 done - the verifiable agent loop works end-to-end. Next: Phase 4 - map decisions to real native staking + code-enforced risk limits.
+Last activity: 2026-06-26 - Phase 3 complete: full perceive->decide->attest cycle proven live; IPFS<->on-chain integrity verified
 
-Progress: [###-------] ~33% (2 of 6 phases complete)
+Progress: [#####-----] ~50% (3 of 6 phases complete)
 
 ## Performance Metrics
 

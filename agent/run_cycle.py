@@ -12,6 +12,12 @@ from pathlib import Path
 # Make `steward` importable when run as a plain script (no install needed).
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
+# Clean UTF-8 console output on Windows (LLM rationales contain em-dashes etc.).
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 from steward.loop import run_cycle  # noqa: E402
 
 if __name__ == "__main__":
