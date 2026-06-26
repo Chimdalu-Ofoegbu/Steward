@@ -1,0 +1,115 @@
+@import url("https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "IBM Plex Sans";
+  --font-display: "Clash Display";
+  --font-mono: "IBM Plex Mono";
+
+  /* dark (default) — mirrors the design handoff :root */
+  --bg: #0b0d10;
+  --panel: #14171c;
+  --inset: #1b1f26;
+  --raise: #22272f;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-2: rgba(255, 255, 255, 0.13);
+  --ink: #eceff2;
+  --ink-2: #9aa3ad;
+  --ink-3: #727a84;
+  --accent: #22d3ee;
+  --accent-ink: #062a30;
+  --accent-dim: rgba(34, 211, 238, 0.13);
+  --accent-line: rgba(34, 211, 238, 0.32);
+  --green: #34d399;
+  --green-dim: rgba(52, 211, 153, 0.13);
+  --amber: #fbbf24;
+  --amber-dim: rgba(251, 191, 36, 0.13);
+  --red: #f87171;
+  --red-dim: rgba(248, 113, 113, 0.13);
+}
+
+[data-theme="light"] {
+  --bg: #eef1f5;
+  --panel: #ffffff;
+  --inset: #f4f6f9;
+  --raise: #ffffff;
+  --border: rgba(11, 14, 18, 0.1);
+  --border-2: rgba(11, 14, 18, 0.17);
+  --ink: #0e1318;
+  --ink-2: #515a64;
+  --ink-3: #7c858f;
+  --accent: #0e7490;
+  --accent-ink: #ecfeff;
+  --accent-dim: rgba(14, 116, 144, 0.09);
+  --accent-line: rgba(14, 116, 144, 0.3);
+  --green: #047857;
+  --green-dim: rgba(4, 120, 87, 0.1);
+  --amber: #b45309;
+  --amber-dim: rgba(180, 83, 9, 0.1);
+  --red: #dc2626;
+  --red-dim: rgba(220, 38, 38, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: 0.1px;
+}
+
+::selection {
+  background: var(--accent-line);
+  color: var(--ink);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* shared surface utilities */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 28px -12px rgba(0, 0, 0, 0.6);
+}
+.mono {
+  font-family: var(--font-mono), monospace;
+}
+.disp {
+  font-family: var(--font-display), sans-serif;
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
