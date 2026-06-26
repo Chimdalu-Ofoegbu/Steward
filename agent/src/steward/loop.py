@@ -23,7 +23,7 @@ import asyncio
 import json
 from pathlib import Path
 
-from . import act, chain, decide, risk
+from . import act, chain, decide, feed, risk
 from .perceive import perceive
 from .state import State
 
@@ -122,6 +122,22 @@ def run_cycle(db_path: str | None = None, model: str | None = None) -> dict:
     )
     st.mark_cycle(epoch, "attested")
 
+    # FRNT-02 — append to the decision feed the frontend renders. staking_txn is
+    # filled in below once (if) a deploy lands; append now so a hold/rejected
+    # cycle still shows up, then re-append (dedup by hash) with the staking txn.
+    feed.append_entry(feed.build_entry(
+        epoch=epoch,
+        action=decision.action,
+        amount_cspr=decision.amount_cspr,
+        validator=decision.validator_to,
+        confidence=decision.confidence,
+        rationale=decision.rationale,
+        cid=attestation["cid"],
+        decision_hash=attestation["hash"],
+        attestation_txn=attestation["txn"],
+        staking_txn=None,
+    ))
+
     print(f"[steward] IPFS CID:        {attestation['cid']}")
     print(f"[steward] on-chain hash:   {attestation['hash']}")
     print(f"[steward] ATTESTATION txn: {attestation['txn']}")
@@ -166,6 +182,20 @@ def run_cycle(db_path: str | None = None, model: str | None = None) -> dict:
     confirmed = chain.confirm(staking_txn)
     st.clear_pending(staking_txn)
     st.mark_cycle(epoch, "confirmed" if confirmed else "error")
+
+    # Re-append the feed entry with the staking txn now known (dedup by hash).
+    feed.append_entry(feed.build_entry(
+        epoch=epoch,
+        action=decision.action,
+        amount_cspr=decision.amount_cspr,
+        validator=acted.get("validator") or decision.validator_to,
+        confidence=decision.confidence,
+        rationale=decision.rationale,
+        cid=attestation["cid"],
+        decision_hash=attestation["hash"],
+        attestation_txn=attestation["txn"],
+        staking_txn=staking_txn,
+    ))
     st.close()
 
     result["staking_txn"] = staking_txn
