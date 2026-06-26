@@ -16,16 +16,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-25)
 
 **Core value:** Every on-chain action the agent takes is preceded by an on-chain attestation of *why* — a verifiable, replayable "agent decision journal" on Casper.
-**Current focus:** Phase 4 - Act On-chain: Native Staking (Phases 1-3 complete)
+**Current focus:** Phase 5 - Frontend (Phases 1-4 complete; MVP chain done)
 
 ## Current Position
 
-Phase: 3 of 6 COMPLETE -> starting Phase 4 (Native Staking)
-Plan: Full agent loop live (decide->IPFS->Journal); integrity VERIFIED (on-chain hash == sha256 pinned bytes); record txn 71d9efcb...0d65
-Status: Phases 1-3 done - the verifiable agent loop works end-to-end. Next: Phase 4 - map decisions to real native staking + code-enforced risk limits.
-Last activity: 2026-06-26 - Phase 3 complete: full perceive->decide->attest cycle proven live; IPFS<->on-chain integrity verified
+Phase: 4 of 6 COMPLETE -> starting Phase 5 (Frontend)
+Plan: Real staking live - delegate 1700 CSPR executed (txn 992fa9f6...12ea), delegation_count 0->1; risk limits enforced in code
+Status: Phases 1-4 done - the FULL MVP chain works end-to-end (perceive->decide->attest->stake). Next: Phase 5 frontend.
+Last activity: 2026-06-26 - Phase 4 complete: agent executed a real on-chain delegation within code-enforced risk limits
 
-Progress: [#####-----] ~50% (3 of 6 phases complete)
+Progress: [######----] ~67% (4 of 6 phases complete)
 
 ## Performance Metrics
 
