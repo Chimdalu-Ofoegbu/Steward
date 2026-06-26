@@ -25,5 +25,25 @@
       ]
     }
   },
-  "validators": []
+  "validators": [
+    {
+      "public_key_hex": "0106ca7c39cd272dbf21a86eeb3b36b7c26e2e9b94af64292419f7862936bca2ca",
+      "role": "delegated",
+      "first_delegate_txn": "992fa9f63e5c5378483ac17929e068e0d38d5c2172ef7f98dbc9ac266f1b12ea",
+      "delegated_cspr": 1700.0,
+      "explorer": "https://testnet.cspr.live/validator/0106ca7c39cd272dbf21a86eeb3b36b7c26e2e9b94af64292419f7862936bca2ca"
+    }
+  ],
+  "phase4_proof": {
+    "requirements": ["STAK-01", "STAK-02", "STAK-03", "STAK-04"],
+    "attestation_txn": "cdc4c7f2f2aa114c949cdec8cacd9d9704da4f0731ebac7450ee1d78387fb1bf",
+    "attestation_explorer": "https://testnet.cspr.live/transaction/cdc4c7f2f2aa114c949cdec8cacd9d9704da4f0731ebac7450ee1d78387fb1bf",
+    "staking_txn": "992fa9f63e5c5378483ac17929e068e0d38d5c2172ef7f98dbc9ac266f1b12ea",
+    "staking_explorer": "https://testnet.cspr.live/transaction/992fa9f63e5c5378483ac17929e068e0d38d5c2172ef7f98dbc9ac266f1b12ea",
+    "decision_cid": "bafkreigyi2n7ry4djtdh3zntlfnql7zuehkht25xddgxayixb75sy75l34",
+    "decision_hash": "d8469bf8e3834cc67de5b3595b05ff3421d479ebb718cd7061170ffb2c7fabdf",
+    "delegations_before": 0,
+    "delegations_after": 1,
+    "note": "Attestation precedes the staking deploy (STAK-04); risk gate enforced in code after the model (STAK-02)."
+  }
 }

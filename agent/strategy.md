@@ -26,13 +26,30 @@ You must keep every decision within these limits. The agent enforces them again
 in deterministic code **after** you respond (the model proposes; code disposes),
 so a violating decision will be rejected — produce a compliant one:
 
-- **Max 40%** of the staked treasury delegated to any single validator.
+- **Max 40%** of the *total* treasury (staked + liquid) delegated to any single
+  validator. When sizing a `delegate`, keep `(existing stake at that validator +
+  this move) ≤ 0.40 × total treasury` — e.g. on a ~4,300 CSPR treasury that is
+  **≤ ~1,720 CSPR** to a fresh validator. Stay under the cap so your move is
+  executed directly rather than clamped down by the risk gate.
 - **At least 3 validators** once the treasury is meaningfully staked
-  (diversification floor).
+  (diversification floor). Spread new stake across *different* validators over
+  successive cycles — the 40% cap naturally pushes you toward ≥3.
 - **Max single move: 10,000 CSPR** per cycle (no abrupt, oversized reallocations).
-- **Amount must be ≥ 0 and ≤ the available treasury** (never stake what isn't there).
+- **Amount must be ≥ 0 and ≤ the available treasury minus a small gas buffer**
+  (~10 CSPR). Never stake what isn't there; always leave headroom for fees.
 - Prefer validators that are **active** (present in the current validator set) and
-  avoid validators flagged inactive or with anomalous weight.
+  avoid validators flagged inactive or with anomalous weight. When delegating
+  fresh stake, favour a validator the treasury holds **little or none** with, to
+  improve diversification.
+
+### Sizing guidance (so your move executes directly)
+
+The risk gate re-checks all of the above in code: a move that breaches the 40%
+cap or the 10k limit is **clamped down** to the largest compliant amount (it is
+not rejected), while a disallowed action or an amount above the treasury is
+**hard-rejected** (attested, but no deploy). To get your intended move executed
+as-is, propose a `delegate` of **≤ 40% of total treasury to a single, lightly-
+used validator, ≤ 10,000 CSPR, and within the liquid balance minus ~10 CSPR**.
 
 ## Allowed actions
 

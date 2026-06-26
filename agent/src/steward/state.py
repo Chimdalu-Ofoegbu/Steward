@@ -72,9 +72,14 @@ class State:
         return epoch
 
     def mark_cycle(self, epoch: int, status: str) -> None:
-        """Set a cycle's status (e.g. 'attested', 'skipped', 'error')."""
+        """Set a cycle's status (e.g. 'attested', 'confirmed', 'skipped', 'error')."""
         self._conn.execute("UPDATE cycles SET status = ? WHERE epoch = ?", (status, epoch))
         self._conn.commit()
+
+    def cycle_status(self, epoch: int) -> str | None:
+        """The recorded status of a cycle, or None if the epoch is unknown."""
+        row = self._conn.execute("SELECT status FROM cycles WHERE epoch = ?", (epoch,)).fetchone()
+        return row["status"] if row else None
 
     # ── Attestations ─────────────────────────────────────────────────────────
     def record_attestation(self, cid: str, hash_hex: str, txn: str, action_kind: str, epoch: int) -> None:
