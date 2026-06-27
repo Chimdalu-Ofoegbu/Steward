@@ -28,10 +28,17 @@ export function useFetch<T>(url: string, pollMs?: number): State<T> & { refresh:
 
   React.useEffect(() => {
     load();
-    if (!pollMs) return;
-    const id = setInterval(() => load(true), pollMs);
-    return () => clearInterval(id);
+    // Re-poll on the shell's single heartbeat (topbar Refresh / 20s tick) so every
+    // mounted reader refreshes together — read-only, never fabricates data.
+    const onRefresh = () => load(true);
+    window.addEventListener("stw:refresh", onRefresh);
+    let id: ReturnType<typeof setInterval> | undefined;
+    if (pollMs) id = setInterval(() => load(true), pollMs);
+    return () => {
+      window.removeEventListener("stw:refresh", onRefresh);
+      if (id) clearInterval(id);
+    };
   }, [load, pollMs]);
 
-  return { ...state, refresh: () => load() };
+  return { ...state, refresh: () => load(true) };
 }

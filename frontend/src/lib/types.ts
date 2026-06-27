@@ -42,6 +42,10 @@ export interface TreasuryData {
   validator_count: number;
   block_height: number | null;
   state_root_hash: string | null;
+  // Where the delegations came from: a live auction read, or — when the public node
+  // rejects the full auction set — the agent's attested on-chain journal. "none" = no
+  // delegations from either source.
+  delegations_source?: "auction" | "journal" | "none";
   fetched_at: number;
   errors?: string[];
 }

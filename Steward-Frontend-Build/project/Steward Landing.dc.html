@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  @keyframes blink {0%,48%{opacity:1}49%,100%{opacity:0}}
+  @keyframes tickerScroll {from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  @keyframes pulseDot {0%,100%{box-shadow:0 0 0 0 rgba(54,241,160,.5)}70%{box-shadow:0 0 0 7px rgba(54,241,160,0)}}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#070809;overflow:hidden;}
+</style>
+</helmet>
+<div style="position:relative;width:100vw;height:100dvh;background:#080a0c;overflow:hidden;font-family:'Schibsted Grotesk',sans-serif;color:#E8ECEA;">
+  <canvas id="cv-ascii" style="position:absolute;inset:0;width:100%;height:100%;z-index:1;opacity:.92;"></canvas>
+  <div style="position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(90deg,rgba(8,10,12,.97) 0%,rgba(8,10,12,.88) 32%,rgba(8,10,12,.5) 64%,rgba(8,10,12,.14) 100%);"></div>
+  <div style="position:absolute;inset:0;z-index:2;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0px,rgba(0,0,0,.16) 1px,transparent 1px,transparent 3px);opacity:.35;"></div>
+  <div style="position:relative;z-index:3;height:100%;display:flex;flex-direction:column;">
+    <!-- top bar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:26px clamp(20px,4vw,56px);border-bottom:1px solid rgba(255,255,255,.07);">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:24px;height:24px;border:1.5px solid #36F1A0;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:13px;color:#36F1A0;font-weight:700;">S</div>
+        <span style="font-family:'Space Mono',monospace;font-size:16px;letter-spacing:.24em;font-weight:700;">STEWARD</span>
+      </div>
+      <div id="lp-nav" style="display:flex;gap:32px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8b94a0;">
+        <span data-scramble data-text="Terminal" style="cursor:pointer;" style-hover="color:#36F1A0">Terminal</span>
+        <span data-scramble data-text="Decisions" style="cursor:pointer;" style-hover="color:#36F1A0">Decisions</span>
+        <span data-scramble data-text="Treasury" style="cursor:pointer;" style-hover="color:#36F1A0">Treasury</span>
+        <span data-scramble data-text="Verifier" style="cursor:pointer;" style-hover="color:#36F1A0">Verifier</span>
+        <span data-scramble data-text="About" style="cursor:pointer;" style-hover="color:#36F1A0">About</span>
+      </div>
+      <div style="width:120px;"></div>
+    </div>
+    <!-- hero -->
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 clamp(20px,6vw,90px);gap:clamp(16px,2.4vh,24px);">
+      <div style="font-family:'Space Mono',monospace;font-size:13px;letter-spacing:.26em;color:#36F1A0;animation:introUp .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:.05s;">// AUTONOMOUS TREASURY AGENT · CASPER NETWORK</div>
+      <div style="font-weight:600;font-size:clamp(40px,7vw,82px);line-height:.98;letter-spacing:-.025em;max-width:18ch;text-wrap:balance;animation:introUp .8s cubic-bezier(.2,.7,.2,1) both;animation-delay:.16s;">Capital on autopilot.<br>Every move <span style="color:#36F1A0;">on the record.</span><span style="display:inline-block;width:clamp(13px,1.6vw,22px);height:clamp(34px,4.6vw,60px);background:#36F1A0;margin-left:10px;transform:translateY(8px);animation:blink 1.1s steps(1) infinite;"></span></div>
+      <div style="font-size:clamp(15px,1.7vw,18px);line-height:1.55;color:#9aa3a0;max-width:58ch;animation:introUp .8s cubic-bezier(.2,.7,.2,1) both;animation-delay:.28s;">Steward perceives, decides, and acts on a live Casper treasury — attesting every decision to an on-chain journal anyone can independently verify.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:8px;animation:introUp .8s cubic-bezier(.2,.7,.2,1) both;animation-delay:.4s;">
+        <a href="Steward Dashboard.dc.html" style="display:flex;align-items:center;gap:9px;background:#36F1A0;color:#04130c;padding:16px 26px;border-radius:9px;font-family:'Space Mono',monospace;font-size:14px;font-weight:700;letter-spacing:.03em;text-decoration:none;transition:background .14s ease,transform .14s ease,box-shadow .14s ease;" style-hover="background:#5cf6b6;transform:translateY(-2px);box-shadow:0 12px 32px rgba(54,241,160,.4)">Enter the terminal →</a>
+        <a href="#" style="display:flex;align-items:center;gap:9px;border:1px solid rgba(255,255,255,.16);color:#E8ECEA;padding:16px 26px;border-radius:9px;font-family:'Space Mono',monospace;font-size:14px;letter-spacing:.03em;text-decoration:none;transition:border-color .14s ease,background .14s ease,transform .14s ease;" style-hover="border-color:#36F1A0;background:rgba(54,241,160,.07);transform:translateY(-2px)">▶ Watch demo</a>
+      </div>
+    </div>
+    <!-- ticker -->
+    <div style="height:48px;border-top:1px solid rgba(255,255,255,.07);background:rgba(0,0,0,.4);overflow:hidden;display:flex;align-items:center;">
+      <div style="flex-shrink:0;display:flex;align-items:center;gap:7px;padding:0 18px;border-right:1px solid rgba(255,255,255,.07);height:100%;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:#36F1A0;"><span style="width:7px;height:7px;border-radius:50%;background:#36F1A0;animation:pulseDot 1.8s infinite;"></span>LIVE</div>
+      <div style="overflow:hidden;flex:1;">
+        <div style="display:flex;width:max-content;animation:tickerScroll 38s linear infinite;font-family:'Space Mono',monospace;font-size:12px;color:#b9c1bd;white-space:nowrap;">
+          <span style="padding:0 26px;">TREASURY NAV <span style="color:#fff;">2,418,330 CSPR</span></span><span style="color:#445;">·</span>
+          <span style="padding:0 26px;">≈ <span style="color:#fff;">$1.94M</span></span><span style="color:#445;">·</span>
+          <span style="padding:0 26px;">STAKING APR <span style="color:#36F1A0;">11.4%</span></span><span style="color:#445;">·</span>
+          <span style="padding:0 26px;">VALIDATORS <span style="color:#fff;">6</span></span><span style="color:#445;">·</span>
+          <span style="padding:0 26px;">DECISIONS ATTESTED <span style="color:#fff;">1,284</span></span><span style="color:#445;">·</span>
+          <span style="padding:0 26px;">LAST CYCLE <span style="color:#fff;">04:12 AGO</span></span><span style="color:#445;">·</span>
+          <span style="padding:0 26px;">NEXT CYCLE <span style="color:#36F1A0;">10:48</span></span><span style="color:#445;">·</span>
+          <span style="padding:0 26px;">TREASURY NAV <span style="color:#fff;">2,418,330 CSPR</span></span><span style="color:#445;">·</span>
+          <span style="padding:0 26px;">≈ <span style="color:#fff;">$1.94M</span></span><span style="color:#445;">·</span>
+          <span style="padding:0 26px;">STAKING APR <span style="color:#36F1A0;">11.4%</span></span><span style="color:#445;">·</span>
+          <span style="padding:0 26px;">VALIDATORS <span style="color:#fff;">6</span></span><span style="color:#445;">·</span>
+          <span style="padding:0 26px;">DECISIONS ATTESTED <span style="color:#fff;">1,284</span></span><span style="color:#445;">·</span>
+          <span style="padding:0 26px;">LAST CYCLE <span style="color:#fff;">04:12 AGO</span></span><span style="color:#445;">·</span>
+          <span style="padding:0 26px;">NEXT CYCLE <span style="color:#36F1A0;">10:48</span></span><span style="color:#445;">·</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() {
+    this._cleanups = [];
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.initScramble();
+    if (!reduce) this.initAscii();
+  }
+  componentWillUnmount() { (this._cleanups || []).forEach(fn => { try { fn(); } catch (e) {} }); }
+  initScramble() {
+    const glyphs = 'ABCDEFGHJKLMNPQRSTUVWXYZ#%&/()=+*<>01';
+    document.querySelectorAll('[data-scramble]').forEach(node => {
+      const final = node.getAttribute('data-text') || node.textContent;
+      node.textContent = final;
+      let raf = null, start = 0; const dur = 420;
+      const run = (ts) => {
+        if (!start) start = ts;
+        const p = Math.min((ts - start) / dur, 1);
+        const reveal = Math.floor(p * final.length);
+        let out = '';
+        for (let i = 0; i < final.length; i++) {
+          if (i < reveal || final[i] === ' ') out += final[i];
+          else out += glyphs[Math.floor(Math.random() * glyphs.length)];
+        }
+        node.textContent = out;
+        if (p < 1) raf = requestAnimationFrame(run); else node.textContent = final;
+      };
+      const onEnter = () => { start = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(run); };
+      node.addEventListener('mouseenter', onEnter);
+      this._cleanups.push(() => { node.removeEventListener('mouseenter', onEnter); cancelAnimationFrame(raf); });
+    });
+  }
+  initAscii() {
+    const cv = document.getElementById('cv-ascii'); if (!cv) return;
+    const ctx = cv.getContext('2d');
+    let W = 0, H = 0;
+    const fit = () => { W = cv.width = window.innerWidth; H = cv.height = window.innerHeight; ctx.font = '12px "Space Mono", monospace'; ctx.textBaseline = 'top'; };
+    fit();
+    window.addEventListener('resize', fit);
+    const cell = 17, ramp = ' .\u00b7:-=+*o\u2591\u2592\u2593\u2588';
+    const NC = 14, colorCache = [];
+    for (let i = 0; i < NC; i++) colorCache.push('rgba(54,241,160,' + (0.1 + i / (NC - 1) * 0.66).toFixed(3) + ')');
+    let mx = W * 0.68, my = H * 0.42, tmx = mx, tmy = my;
+    const onMove = (e) => { const r = cv.getBoundingClientRect(); tmx = (e.clientX - r.left) / r.width * cv.width; tmy = (e.clientY - r.top) / r.height * cv.height; };
+    window.addEventListener('mousemove', onMove);
+    let raf, last = 0;
+    const draw = (ts) => {
+      raf = requestAnimationFrame(draw);
+      if (document.hidden) return;
+      if (ts - last < 22) return; last = ts;
+      mx += (tmx - mx) * 0.32; my += (tmy - my) * 0.32;
+      ctx.fillStyle = '#070809'; ctx.fillRect(0, 0, W, H);
+      const t = ts * 0.0013;
+      const cols = Math.ceil(W / cell), rows = Math.ceil(H / cell);
+      const rl = ramp.length - 1, nc = NC - 1;
+      for (let gy = 0; gy < rows; gy++) {
+        const py = gy * cell;
+        for (let gx = 0; gx < cols; gx++) {
+          const px = gx * cell;
+          const wave = Math.sin(px * 0.013 + t * 1.8) + Math.cos(py * 0.017 - t * 1.4) + Math.sin((px + py) * 0.009 + t);
+          const dx = px - mx, dy = py - my;
+          const infl = Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy) / 300);
+          let v = (wave / 3) * 0.5 + 0.45 + infl * 1.05;
+          if (v < 0.16) continue; if (v > 1) v = 1;
+          const ch = ramp[(v * rl) | 0]; if (ch === ' ') continue;
+          ctx.fillStyle = colorCache[(v * nc) | 0];
+          ctx.fillText(ch, px, py);
+        }
+      }
+    };
+    raf = requestAnimationFrame(draw);
+    this._cleanups.push(() => { window.removeEventListener('resize', fit); window.removeEventListener('mousemove', onMove); cancelAnimationFrame(raf); });
+  }
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -2,19 +2,22 @@
 import * as React from "react";
 import type { JournalEntry, VerifyResult } from "@/lib/types";
 import { PUBLIC_CONFIG } from "@/lib/config";
-import { absTime, confPct, titleCase, nfCspr } from "@/lib/format";
-import { HashChip, LinkChip, KindPill, VerifiedBadge } from "./primitives";
-import { kindIcon, kindTint, X, Check, Verify as VerifyIcon } from "./icons";
+import { relTime, confPct, nfCspr } from "@/lib/format";
+import { HashChip, LinkChip, KindPill } from "./primitives";
+import { kindTint, X } from "./icons";
 import { validatorName } from "@/lib/validators";
 
 const explorer = PUBLIC_CONFIG.explorer;
+
+// Mandate limits enforced in agent/src/steward/risk.py (real, code-enforced).
+const MANDATE = { maxPerValidatorPct: 40, minValidators: 3, maxSingleMoveCspr: 10000 };
 
 export function DecisionDrawer({ entry, onClose }: { entry: JournalEntry; onClose: () => void }) {
   const [payload, setPayload] = React.useState<any>(null);
   const [verify, setVerify] = React.useState<VerifyResult | null>(null);
   const [verifying, setVerifying] = React.useState(false);
   const tint = kindTint(entry.action);
-  const KindIcon = kindIcon[entry.action] ?? kindIcon.hold;
+  const pct = Math.round(entry.confidence * 100);
 
   React.useEffect(() => {
     let alive = true;
@@ -40,154 +43,201 @@ export function DecisionDrawer({ entry, onClose }: { entry: JournalEntry; onClos
     }
   };
 
-  const decision = payload?.decision ?? {};
-  const observed = payload?.observed_state ?? {};
-  const observedBullets: string[] = [];
-  if (observed.delegation_count != null) observedBullets.push(`Delegations at decision time: ${observed.delegation_count}`);
-  if (observed.block_height) observedBullets.push(`Observed at block ${observed.block_height}`);
-  if (Array.isArray(observed.top_validators) && observed.top_validators[0])
-    observedBullets.push(
-      `Top validator by weight: ${nfCspr(observed.top_validators[0].weight_cspr ?? 0, 0)} CSPR staked`,
-    );
+  const obs = payload?.observed_state ?? {};
+  const observedList: { k: string; v: string }[] = [];
+  if (obs.liquid_cspr != null) observedList.push({ k: "Liquid balance", v: `${nfCspr(obs.liquid_cspr, 0)} CSPR` });
+  if (obs.delegated_cspr != null) observedList.push({ k: "Delegated", v: `${nfCspr(obs.delegated_cspr, 0)} CSPR` });
+  if (obs.delegation_count != null) observedList.push({ k: "Active delegations", v: String(obs.delegation_count) });
+  if (obs.block_height) observedList.push({ k: "Observed at block", v: String(obs.block_height) });
+  if (Array.isArray(obs.top_validators) && obs.top_validators[0]?.weight_cspr != null)
+    observedList.push({ k: "Top validator weight", v: `${nfCspr(obs.top_validators[0].weight_cspr, 0)} CSPR` });
+
+  const riskList = [
+    { label: `Max ${MANDATE.maxPerValidatorPct}% to one validator`, detail: "enforced in code" },
+    {
+      label: `Min ${MANDATE.minValidators} validators (once staked)`,
+      detail: obs.delegation_count != null ? `${obs.delegation_count} active` : "building",
+    },
+    { label: `Max ${nfCspr(MANDATE.maxSingleMoveCspr, 0)} CSPR / cycle`, detail: `${nfCspr(entry.amount_cspr, 0)} this move` },
+  ];
 
   return (
-    <div className="fixed inset-0 flex justify-end" style={{ zIndex: 60 }}>
-      <div onClick={onClose} className="absolute inset-0 animate-stw-fade" style={{ background: "rgba(3,5,7,0.62)", backdropFilter: "blur(2px)" }} />
+    <div className="fixed inset-0 flex justify-end" style={{ zIndex: 90 }}>
+      <div onClick={onClose} className="absolute inset-0" style={{ background: "rgba(0,0,0,0.5)" }} />
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Decision detail"
-        className="relative panel animate-stw-fade"
-        style={{ width: "min(520px, 100%)", height: "100%", borderRadius: 0, overflowY: "auto", boxShadow: "-20px 0 60px -20px rgba(0,0,0,0.7)" }}
+        className="relative animate-stw-drawer"
+        style={{
+          width: "min(560px, 100vw)",
+          height: "100%",
+          background: "var(--panel)",
+          borderLeft: "1px solid var(--border-2)",
+          overflowY: "auto",
+          boxShadow: "-20px 0 60px var(--shadow)",
+        }}
       >
+        {/* sticky header */}
         <div
-          className="sticky top-0 flex items-start gap-3"
-          style={{ background: "var(--panel)", borderBottom: "1px solid var(--border)", padding: "16px 20px", zIndex: 2 }}
+          className="sticky top-0 flex items-center justify-between"
+          style={{ background: "var(--panel)", borderBottom: "1px solid var(--border)", padding: "18px 22px", zIndex: 2 }}
         >
-          <div
-            className="flex items-center justify-center"
-            style={{ width: 38, height: 38, borderRadius: 10, flex: "none", color: tint, background: "color-mix(in srgb, currentColor 12%, transparent)", border: `1px solid color-mix(in srgb, ${tint} 28%, transparent)` }}
+          <div className="flex items-center gap-2.5" style={{ minWidth: 0 }}>
+            <KindPill kind={entry.action} tint={tint} />
+            <span className="mono" style={{ fontSize: 12, color: "var(--ink-2)" }}>{relTime(entry.timestamp)} · epoch {entry.epoch}</span>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="stw-btn-ghost flex items-center justify-center"
+            style={{ width: 32, height: 32, borderRadius: 8, flex: "none" }}
           >
-            <KindIcon size={18} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="disp" style={{ fontWeight: 600, fontSize: 17, color: "var(--ink)" }}>
-                {titleCase(entry.action)}
-              </span>
-              <VerifiedBadge verified />
-            </div>
-            <div style={{ fontSize: 12, color: "var(--ink-2)", marginTop: 3 }}>
-              {absTime(entry.timestamp)} · epoch {entry.epoch} · conf {confPct(entry.confidence)}
-            </div>
-          </div>
-          <button onClick={onClose} aria-label="Close" className="flex items-center justify-center" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--border)", background: "var(--inset)", color: "var(--ink-2)", flex: "none" }}>
             <X size={16} />
           </button>
         </div>
 
-        <div className="flex flex-col" style={{ padding: "18px 20px 28px", gap: 18 }}>
-          <p style={{ margin: 0, fontSize: 15.5, color: "var(--ink)", lineHeight: 1.5, fontWeight: 500 }}>
-            {summarize(entry)}
-          </p>
+        <div style={{ padding: 22 }}>
+          <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.3, letterSpacing: "-0.01em", color: "var(--ink)" }}>{summarize(entry)}</div>
 
-          {/* on-chain facts */}
-          <div style={{ background: "var(--inset)", border: "1px solid var(--border)", borderRadius: 11, overflow: "hidden" }}>
-            <div className="eyebrow" style={{ padding: "10px 14px", borderBottom: "1px solid var(--border)" }}>
-              On-chain facts
+          {/* confidence */}
+          <div className="flex items-center gap-2.5" style={{ marginTop: 14 }}>
+            <div style={{ flex: 1, height: 5, background: "var(--inset)", borderRadius: 3, overflow: "hidden" }}>
+              <div style={{ width: `${pct}%`, height: "100%", background: "var(--accent)" }} />
             </div>
-            <Fact label="epoch" value={String(entry.epoch)} mono />
-            <Fact label="decision_hash" value={entry.decision_hash} copy />
-            <Fact label="ipfs_cid" value={entry.cid} copy />
-            <Fact label="attestation" value={entry.attestation_txn} href={`${explorer}/transaction/${entry.attestation_txn}`} />
-            {entry.staking_txn && (
-              <Fact label="staking" value={entry.staking_txn} href={`${explorer}/transaction/${entry.staking_txn}`} last />
-            )}
+            <span className="mono" style={{ fontSize: 11, color: "var(--ink-2)" }}>confidence {confPct(entry.confidence)}</span>
           </div>
 
           {/* observed state */}
-          {observedBullets.length > 0 && (
-            <div>
-              <div className="eyebrow" style={{ marginBottom: 9 }}>
-                Observed state
-              </div>
+          {observedList.length > 0 && (
+            <>
+              <SectionLabel>Observed state</SectionLabel>
               <div className="flex flex-col" style={{ gap: 7 }}>
-                {observedBullets.map((o, i) => (
-                  <div key={i} className="flex" style={{ gap: 9, alignItems: "baseline" }}>
-                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ink-3)", flex: "none", transform: "translateY(6px)" }} />
-                    <span style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5 }}>{o}</span>
+                {observedList.map((o, i) => (
+                  <div key={i} className="flex justify-between gap-3" style={{ fontSize: 12.5, borderBottom: "1px solid var(--border)", paddingBottom: 7 }}>
+                    <span style={{ color: "var(--ink-2)" }}>{o.k}</span>
+                    <span className="mono truncate" style={{ color: "var(--ink)", textAlign: "right", minWidth: 0 }}>{o.v}</span>
                   </div>
                 ))}
               </div>
-            </div>
+            </>
           )}
 
           {/* reasoning */}
-          <div>
-            <div className="eyebrow" style={{ marginBottom: 9 }}>
-              Reasoning
+          <SectionLabel>Reasoning</SectionLabel>
+          <p style={{ margin: 0, fontSize: 13.5, color: "var(--ink-2)", lineHeight: 1.6 }}>{payload?.decision?.rationale || entry.rationale}</p>
+
+          {/* risk checks */}
+          <SectionLabel>Risk-limit checks</SectionLabel>
+          <div className="flex flex-col" style={{ gap: 8 }}>
+            {riskList.map((r, i) => (
+              <div key={i} className="flex items-center gap-2.5" style={{ fontSize: 12.5 }}>
+                <span style={{ color: "var(--accent)" }}>✓</span>
+                <span style={{ flex: 1, color: "var(--ink)" }}>{r.label}</span>
+                <span className="mono" style={{ fontSize: 11, color: "var(--ink-2)" }}>{r.detail}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* on-chain facts */}
+          <SectionLabel>On-chain facts</SectionLabel>
+          <div className="flex flex-col" style={{ gap: 9 }}>
+            <FactCol label="decision_hash">
+              <HashChip value={entry.decision_hash} head={14} tail={10} />
+            </FactCol>
+            <FactCol label="ipfs_cid">
+              <HashChip value={entry.cid} head={14} tail={10} />
+            </FactCol>
+            <div className="flex gap-2.5" style={{ flexWrap: "wrap" }}>
+              <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+                <FactCol label="attestation txn">
+                  <LinkChip value={entry.attestation_txn} href={`${explorer}/transaction/${entry.attestation_txn}`} head={10} tail={8} />
+                </FactCol>
+              </div>
+              <div style={{ width: 96 }}>
+                <FactCol label="epoch">
+                  <span className="mono stw-chip" style={{ display: "inline-block", fontSize: 11.5 }}>{entry.epoch}</span>
+                </FactCol>
+              </div>
             </div>
-            <p style={{ margin: 0, fontSize: 13.5, color: "var(--ink)", lineHeight: 1.65 }}>{decision.rationale || entry.rationale}</p>
+            {entry.staking_txn && (
+              <FactCol label="staking txn">
+                <LinkChip value={entry.staking_txn} href={`${explorer}/transaction/${entry.staking_txn}`} head={10} tail={8} />
+              </FactCol>
+            )}
           </div>
 
           {/* verify */}
-          <div style={{ background: "var(--inset)", border: "1px solid var(--border)", borderRadius: 11, padding: 14 }}>
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Integrity check</div>
-                <div style={{ fontSize: 11.5, color: "var(--ink-2)", marginTop: 2 }}>
-                  Re-hash the raw pinned bytes and compare to the on-chain hash.
-                </div>
+          <button
+            onClick={runVerify}
+            disabled={verifying}
+            className="stw-btn-accent mono flex items-center justify-center gap-2"
+            style={{ marginTop: 20, width: "100%", padding: 13, borderRadius: 9, fontSize: 13, fontWeight: 700, letterSpacing: "0.03em" }}
+          >
+            ⛓ {verifying ? "Verifying…" : verify ? "Re-verify integrity" : "Verify on-chain integrity"}
+          </button>
+
+          {verify && (
+            <div style={{ marginTop: 16, background: "var(--inset)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
+              <div className="flex flex-col" style={{ gap: 12 }}>
+                {(verify.steps ?? []).map((s) => (
+                  <div key={s.id} className="flex gap-2.5" style={{ alignItems: "flex-start" }}>
+                    <StepIcon status={s.status} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 12.5, color: "var(--ink)" }}>{s.title}</div>
+                      <div className="mono truncate" style={{ fontSize: 10.5, color: "var(--ink-2)", marginTop: 2 }}>{s.detail}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <button
-                onClick={runVerify}
-                disabled={verifying}
-                className="flex items-center gap-1.5"
-                style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "1px solid var(--accent-line)", background: "var(--accent-dim)", color: "var(--accent)", fontSize: 12.5, fontWeight: 600 }}
-              >
-                <VerifyIcon size={14} />
-                {verifying ? "Verifying…" : verify ? "Re-verify" : "Verify"}
-              </button>
+              {verify.ok ? (
+                <div className="flex items-center gap-2.5" style={{ marginTop: 13, background: "var(--accent-dim)", border: "1px solid var(--accent-line)", borderRadius: 9, padding: "11px 13px" }}>
+                  <span style={{ fontSize: 15, color: "var(--accent)" }}>✓</span>
+                  <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>MATCH — integrity + provenance verified</span>
+                </div>
+              ) : (
+                verify.error && (
+                  <div style={{ marginTop: 13, fontSize: 12, color: "var(--red)" }}>{verify.error}</div>
+                )
+              )}
             </div>
-            {verify && (
-              <div className="flex flex-col mono" style={{ marginTop: 12, gap: 8, fontSize: 11.5 }}>
-                <Row k="computed" v={verify.computed_hash ?? "—"} />
-                <Row k="on-chain" v={verify.onchain_hash ?? "—"} />
-                <div className="flex items-center gap-2" style={{ marginTop: 2, color: verify.ok ? "var(--green)" : "var(--red)", fontWeight: 600 }}>
-                  <Check size={14} />
-                  {verify.ok ? "MATCH — payload is authentic & unaltered" : verify.error || "No match"}
-                </div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-2" style={{ minWidth: 0 }}>
-      <span style={{ color: "var(--ink-3)", width: 84, flex: "none" }}>{k}</span>
-      <span className="truncate" style={{ flex: 1, minWidth: 0, color: "var(--ink)" }}>
-        {v}
-      </span>
+    <div className="mono" style={{ fontSize: 10.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-3)", margin: "22px 0 10px" }}>
+      {children}
     </div>
   );
 }
 
-function Fact({ label, value, copy, href, mono, last }: { label: string; value: string; copy?: boolean; href?: string; mono?: boolean; last?: boolean }) {
+function FactCol({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2.5" style={{ padding: "9px 14px", borderBottom: last ? undefined : "1px solid var(--border)" }}>
-      <span style={{ width: 104, flex: "none", fontSize: 11, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.3px" }}>{label}</span>
-      <span className="truncate" style={{ flex: 1, minWidth: 0, fontFamily: mono || !copy ? "var(--font-mono)" : undefined, fontSize: 12.5, color: "var(--ink)" }}>
-        {value}
-      </span>
-      <span style={{ flex: "none" }}>
-        {href ? <LinkChip value={value} href={href} head={5} tail={4} /> : copy ? <HashChip value={value} head={5} tail={4} /> : null}
-      </span>
+    <div className="flex flex-col" style={{ gap: 5, minWidth: 0 }}>
+      <span style={{ fontSize: 11, color: "var(--ink-2)" }}>{label}</span>
+      {children}
     </div>
+  );
+}
+
+function StepIcon({ status }: { status: "ok" | "fail" | "pending" }) {
+  const map = {
+    ok: { ch: "✓", color: "var(--accent-ink)", ring: "var(--accent)", bg: "var(--accent)" },
+    fail: { ch: "✕", color: "#fff", ring: "var(--red)", bg: "var(--red)" },
+    pending: { ch: "○", color: "var(--ink-3)", ring: "var(--border-2)", bg: "transparent" },
+  }[status];
+  return (
+    <span
+      className="flex items-center justify-center"
+      style={{ width: 20, height: 20, borderRadius: "50%", flex: "none", fontSize: 11, fontWeight: 700, color: map.color, border: `1px solid ${map.ring}`, background: map.bg }}
+    >
+      {map.ch}
+    </span>
   );
 }
 

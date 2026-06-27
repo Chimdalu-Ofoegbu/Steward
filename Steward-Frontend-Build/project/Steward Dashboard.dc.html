@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  @keyframes pulseDot {0%,100%{box-shadow:0 0 0 0 rgba(54,241,160,.5)}70%{box-shadow:0 0 0 6px rgba(54,241,160,0)}}
+  @keyframes newFlash {0%{background:rgba(54,241,160,.16);box-shadow:inset 3px 0 0 #36F1A0}100%{background:transparent;box-shadow:inset 0 0 0 transparent}}
+  @keyframes drawerIn {from{transform:translateX(100%)}to{transform:translateX(0)}}
+  @keyframes toastIn {from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @keyframes spin {to{transform:rotate(360deg)}}
+  @keyframes fadeUp {from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#0a0c0e;}
+  ::-webkit-scrollbar{width:10px;height:10px;}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:6px;}
+</style>
+</helmet>
+<div id="app-root" style="--bg:#0a0c0e;--panel:#121519;--panel2:#161a20;--inset:#1b2027;--bd:rgba(255,255,255,.07);--bd2:rgba(255,255,255,.13);--ink:#e8eced;--sub:#9aa3a0;--tert:#5f6864;--acc:#36F1A0;--accink:#04130c;--amber:#f5b544;--red:#ff6b6b;--cyan:#2fa8e0;--violet:#6c7be0;--shadow:rgba(0,0,0,.45);min-height:100dvh;background:var(--bg);color:var(--ink);font-family:'Schibsted Grotesk',sans-serif;">
+
+  <!-- SIDEBAR -->
+  <aside style="{{ sidebarStyle }}">
+    <a href="Steward Landing.dc.html" style="display:flex;align-items:center;gap:11px;padding:22px 22px 18px;text-decoration:none;color:var(--ink);">
+      <div style="width:24px;height:24px;border:1.5px solid var(--acc);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:13px;color:var(--acc);font-weight:700;">S</div>
+      <span style="font-family:'Space Mono',monospace;font-size:15px;letter-spacing:.22em;font-weight:700;">STEWARD</span>
+    </a>
+    <nav style="display:flex;flex-direction:column;gap:3px;padding:8px 12px;flex:1;color:var(--sub);">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="5">
+        <div data-view="{{ n.view }}" onClick="{{ go }}" style="{{ n.style }}" style-hover="background:var(--inset);color:var(--acc)">
+          <span style="width:16px;text-align:center;font-size:13px;opacity:.9;">{{ n.icon }}</span>
+          <span data-scramble data-text="{{ n.label }}" style="font-family:'Space Mono',monospace;font-size:12.5px;letter-spacing:.06em;">{{ n.label }}</span>
+        </div>
+      </sc-for>
+    </nav>
+    <div style="padding:14px;border-top:1px solid var(--bd);display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;gap:9px;background:var(--inset);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--acc);animation:pulseDot 1.8s infinite;flex-shrink:0;"></span>
+        <div style="min-width:0;">
+          <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--acc);">AGENT LIVE</div>
+          <div style="font-size:11px;color:var(--sub);">Next cycle {{ nextLabel }}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;display:flex;align-items:center;gap:7px;border:1px solid var(--bd2);border-radius:9px;padding:9px 11px;font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);cursor:pointer;min-width:0;transition:border-color .14s ease,background .14s ease;" style-hover="border-color:var(--acc);background:rgba(54,241,160,.06)"><span style="width:6px;height:6px;border-radius:50%;background:var(--tert);"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Connect Wallet</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MOBILE backdrop + hamburger -->
+  <sc-if value="{{ showBackdrop }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeNav }}" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:70;"></div>
+  </sc-if>
+  <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ toggleNav }}" style="position:fixed;left:14px;top:14px;z-index:75;width:42px;height:42px;border-radius:10px;background:var(--panel);border:1px solid var(--bd2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;" aria-label="Open navigation" aria-expanded="{{ mobileNav }}">
+      <span style="width:18px;height:2px;background:var(--ink);"></span><span style="width:18px;height:2px;background:var(--ink);"></span><span style="width:18px;height:2px;background:var(--ink);"></span>
+    </div>
+  </sc-if>
+
+  <!-- MAIN -->
+  <main style="{{ mainStyle }}">
+    <!-- topbar -->
+    <div style="position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 26px;padding-left:{{ topbarPadLeft }};background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--bd);">
+      <div style="min-width:0;">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--tert);">{{ crumb }}</div>
+        <div style="font-size:20px;font-weight:600;letter-spacing:-.01em;margin-top:2px;">{{ pageTitle }}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);" title="Live read">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--acc);animation:pulseDot 1.8s infinite;"></span>Updated {{ lastCycleLabel }}
+        </div>
+        <div onClick="{{ runCycle }}" style="display:flex;align-items:center;gap:8px;background:var(--acc);color:var(--accink);border-radius:9px;padding:10px 15px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.03em;cursor:pointer;transition:background .14s ease,transform .14s ease,box-shadow .14s ease;" style-hover="background:#5cf6b6;transform:translateY(-2px);box-shadow:0 10px 26px rgba(54,241,160,.32)">▶ Run next cycle</div>
+      </div>
+    </div>
+
+    <div style="padding:34px;max-width:1380px;">
+
+      <!-- ===================== DASHBOARD ===================== -->
+      <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+        <div style="">
+          <!-- KPI row -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px;">
+            <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:22px;">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--tert);">TREASURY NAV</div>
+              <div style="font-family:'Space Mono',monospace;font-size:24px;font-weight:700;margin-top:14px;">2,418,330</div>
+              <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--sub);"><span>CSPR</span><span>≈ $1.94M</span></div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:22px;">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--tert);">STAKING APR</div>
+              <div style="font-family:'Space Mono',monospace;font-size:24px;font-weight:700;margin-top:14px;color:var(--acc);">11.4%</div>
+              <div style="margin-top:6px;font-size:12px;color:var(--sub);">+0.3% vs last epoch</div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:22px;">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--tert);">VALIDATORS</div>
+              <div style="font-family:'Space Mono',monospace;font-size:24px;font-weight:700;margin-top:14px;">6</div>
+              <div style="margin-top:6px;font-size:12px;color:var(--sub);">all within mandate</div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:22px;">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--tert);">DECISIONS ATTESTED</div>
+              <div style="font-family:'Space Mono',monospace;font-size:24px;font-weight:700;margin-top:14px;">{{ attestFmt }}</div>
+              <div style="margin-top:6px;font-size:12px;color:var(--sub);">on-chain journal</div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:22px;">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--tert);">AGENT STATUS</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:14px;"><span style="width:9px;height:9px;border-radius:50%;background:var(--acc);animation:pulseDot 1.8s infinite;"></span><span style="font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:var(--acc);">LIVE</span></div>
+              <div style="margin-top:6px;font-size:12px;color:var(--sub);">next cycle {{ nextLabel }}</div>
+            </div>
+          </div>
+
+          <!-- row 2: latest decision + agent identity -->
+          <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:18px;margin-top:18px;">
+            <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:24px;min-width:0;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--tert);">LATEST DECISION</div>
+                <div style="display:flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:11px;color:var(--acc);background:rgba(54,241,160,.1);border:1px solid rgba(54,241,160,.3);border-radius:20px;padding:4px 10px;">✓ VERIFIED</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                <span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.08em;color:{{ latest.kindHex }};background:{{ latest.kindBg }};border-radius:6px;padding:4px 9px;">{{ latest.kindLabel }}</span>
+                <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--sub);">{{ latest.timeRel }} · epoch {{ latest.epoch }}</span>
+              </div>
+              <div style="font-size:21px;font-weight:600;letter-spacing:-.01em;line-height:1.3;">{{ latest.summary }}</div>
+              <div style="font-size:14px;color:var(--sub);line-height:1.55;margin-top:14px;">{{ latest.reason0 }}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;align-items:center;">
+                <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--tert);">decision_hash</span>
+                <span data-copy="{{ latest.decision_hash }}" onClick="{{ onCopy }}" style="font-family:'Space Mono',monospace;font-size:11.5px;background:var(--inset);border:1px solid var(--bd);border-radius:6px;padding:5px 9px;cursor:pointer;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" style-hover="border-color:var(--acc)" title="Copy">{{ latest.dhashShort }}</span>
+                <span data-id="{{ latest.id }}" onClick="{{ openRow }}" style="margin-left:auto;font-family:'Space Mono',monospace;font-size:12px;color:var(--acc);cursor:pointer;" style-hover="text-decoration:underline">Open detail →</span>
+              </div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:24px;min-width:0;">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--tert);margin-bottom:16px;">AGENT IDENTITY</div>
+              <div style="display:flex;flex-direction:column;gap:18px;">
+                <div><div style="font-size:12px;color:var(--sub);">Model</div><div style="font-size:15px;font-weight:600;margin-top:3px;">Claude Opus 4.8</div></div>
+                <div><div style="font-size:12px;color:var(--sub);">Mandate</div><div style="font-size:15px;font-weight:600;margin-top:3px;">Conservative Yield · v2.3</div></div>
+                <div style="min-width:0;">
+                  <div style="font-size:12px;color:var(--sub);margin-bottom:5px;">Agent public key</div>
+                  <span data-copy="{{ agentKey }}" onClick="{{ onCopy }}" style="display:block;font-family:'Space Mono',monospace;font-size:11.5px;background:var(--inset);border:1px solid var(--bd);border-radius:6px;padding:7px 10px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" style-hover="border-color:var(--acc)" title="Copy">{{ agentKeyShort }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- row 3: allocation + mini feed -->
+          <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:18px;margin-top:18px;">
+            <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:24px;min-width:0;">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--tert);margin-bottom:18px;">ALLOCATION · 6 VALIDATORS</div>
+              <div style="display:flex;gap:36px;align-items:center;flex-wrap:wrap;">
+                <div style="width:168px;height:168px;border-radius:50%;flex-shrink:0;background:conic-gradient(#36F1A0 0% 25.3%,#2bd4c0 25.3% 45.2%,#2fa8e0 45.2% 62.6%,#6c7be0 62.6% 77.5%,#c9a24b 77.5% 90.4%,#4a5560 90.4% 100%);display:flex;align-items:center;justify-content:center;">
+                  <div style="width:104px;height:104px;border-radius:50%;background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                    <div style="font-family:'Space Mono',monospace;font-size:18px;font-weight:700;">2.42M</div>
+                    <div style="font-size:10px;color:var(--tert);letter-spacing:.1em;">CSPR STAKED</div>
+                  </div>
+                </div>
+                <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:13px;">
+                  <sc-for list="{{ validators }}" as="v" hint-placeholder-count="6">
+                    <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                      <span style="width:9px;height:9px;border-radius:2px;background:{{ v.color }};flex-shrink:0;"></span>
+                      <span style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">{{ v.name }}</span>
+                      <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--sub);flex-shrink:0;">{{ v.share }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:24px;min-width:0;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--tert);">RECENT DECISIONS</div>
+                <span data-view="decisions" onClick="{{ go }}" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--acc);cursor:pointer;" style-hover="text-decoration:underline">View all →</span>
+              </div>
+              <div style="display:flex;flex-direction:column;">
+                <sc-for list="{{ miniFeed }}" as="d" hint-placeholder-count="5">
+                  <div data-id="{{ d.id }}" onClick="{{ openRow }}" style="display:flex;align-items:center;gap:10px;padding:13px 4px;border-bottom:1px solid var(--bd);cursor:pointer;{{ d.rowExtra }}" style-hover="background:var(--inset)">
+                    <span style="width:7px;height:7px;border-radius:2px;background:{{ d.kindHex }};flex-shrink:0;"></span>
+                    <span style="font-size:12.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ d.summary }}</span>
+                    <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--tert);flex-shrink:0;">{{ d.timeRel }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===================== DECISIONS ===================== -->
+      <sc-if value="{{ isDecisions }}" hint-placeholder-val="{{ false }}">
+        <div style="">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+            <sc-for list="{{ filterChips }}" as="f" hint-placeholder-count="6">
+              <div data-filter="{{ f.filter }}" onClick="{{ setFilter }}" style="{{ f.style }}" style-hover="border-color:var(--acc)">{{ f.label }}</div>
+            </sc-for>
+            <div style="margin-left:auto;font-family:'Space Mono',monospace;font-size:12px;color:var(--sub);">{{ filteredCount }} records</div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;overflow:hidden;">
+            <div style="display:grid;grid-template-columns:96px 120px 1fr 110px 116px;gap:16px;padding:15px 24px;border-bottom:1px solid var(--bd);font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:var(--tert);">
+              <div>TIME</div><div>ACTION</div><div>SUMMARY</div><div>CONFIDENCE</div><div style="text-align:right;">STATUS</div>
+            </div>
+            <sc-for list="{{ decisionsView }}" as="d" hint-placeholder-count="8">
+              <div data-id="{{ d.id }}" onClick="{{ openRow }}" style="display:grid;grid-template-columns:96px 120px 1fr 110px 116px;gap:16px;padding:17px 24px;border-bottom:1px solid var(--bd);cursor:pointer;align-items:center;{{ d.rowExtra }}" style-hover="background:var(--inset)">
+                <div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ d.timeRel }}</div>
+                <div style="min-width:0;"><span style="font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.05em;color:{{ d.kindHex }};background:{{ d.kindBg }};border-radius:5px;padding:3px 8px;white-space:nowrap;">{{ d.kindLabel }}</span></div>
+                <div style="min-width:0;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ d.summary }}<sc-if value="{{ d.isNew }}" hint-placeholder-val="{{ false }}"><span style="margin-left:8px;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--accink);background:var(--acc);border-radius:4px;padding:2px 5px;">NEW</span></sc-if></div>
+                <div style="display:flex;align-items:center;gap:8px;min-width:0;"><div style="flex:1;height:5px;background:var(--inset);border-radius:3px;overflow:hidden;min-width:0;"><div style="width:{{ d.confWidth }};height:100%;background:var(--acc);"></div></div><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);flex-shrink:0;">{{ d.confPct }}</span></div>
+                <div style="text-align:right;min-width:0;"><span style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--acc);background:rgba(54,241,160,.1);border:1px solid rgba(54,241,160,.28);border-radius:20px;padding:3px 9px;white-space:nowrap;">✓ Verified</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===================== TREASURY ===================== -->
+      <sc-if value="{{ isTreasury }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;overflow:hidden;">
+            <div style="padding:18px 24px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--tert);border-bottom:1px solid var(--bd);">ALLOCATION BREAKDOWN</div>
+            <div style="display:grid;grid-template-columns:1.4fr 180px 90px 90px 1fr;gap:12px;padding:13px 24px;border-bottom:1px solid var(--bd);font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:var(--tert);">
+              <div>VALIDATOR</div><div>DELEGATED</div><div>SHARE</div><div>UPTIME</div><div style="text-align:right;">REWARDS (30D)</div>
+            </div>
+            <sc-for list="{{ validators }}" as="v" hint-placeholder-count="6">
+              <div style="display:grid;grid-template-columns:1.4fr 180px 90px 90px 1fr;gap:12px;padding:16px 24px;border-bottom:1px solid var(--bd);align-items:center;">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0;"><span style="width:9px;height:9px;border-radius:2px;background:{{ v.color }};flex-shrink:0;"></span><div style="min-width:0;"><div style="font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ v.name }}</div><div style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--tert);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ v.pubShort }}</div></div></div>
+                <div style="font-family:'Space Mono',monospace;font-size:12.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ v.amount }}</div>
+                <div style="font-family:'Space Mono',monospace;font-size:12.5px;color:var(--sub);">{{ v.share }}</div>
+                <div style="font-family:'Space Mono',monospace;font-size:12.5px;color:{{ v.uptimeColor }};">{{ v.uptime }}</div>
+                <div style="text-align:right;font-family:'Space Mono',monospace;font-size:12.5px;color:var(--acc);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ v.rewards }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:18px;">
+            <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:24px;min-width:0;">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;"><div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--tert);">CUMULATIVE REWARDS</div><div style="font-family:'Space Mono',monospace;font-size:14px;color:var(--acc);">+38,420 CSPR</div></div>
+              <svg viewBox="0 0 600 180" preserveAspectRatio="none" data-om-raster style="width:100%;height:180px;display:block;">
+                <defs><linearGradient id="yg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#36F1A0" stop-opacity=".32"/><stop offset="1" stop-color="#36F1A0" stop-opacity="0"/></linearGradient></defs>
+                <path d="M0,152 C60,142 90,136 140,121 C200,104 240,109 300,86 C360,65 410,71 470,49 C520,32 560,29 600,21 L600,180 L0,180 Z" fill="url(#yg)"></path>
+                <path d="M0,152 C60,142 90,136 140,121 C200,104 240,109 300,86 C360,65 410,71 470,49 C520,32 560,29 600,21" fill="none" stroke="#36F1A0" stroke-width="2"></path>
+              </svg>
+              <div style="display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10.5px;color:var(--tert);margin-top:8px;"><span>30d ago</span><span>now</span></div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:24px;min-width:0;">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--tert);margin-bottom:16px;">MANDATE / RISK LIMITS</div>
+              <div style="display:flex;flex-direction:column;gap:16px;">
+                <sc-for list="{{ riskItems }}" as="r" hint-placeholder-count="3">
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:7px;"><span style="color:var(--sub);">{{ r.label }}</span><span style="font-family:'Space Mono',monospace;color:{{ r.color }};">{{ r.statusText }}</span></div>
+                    <div style="height:6px;background:var(--inset);border-radius:3px;overflow:hidden;"><div style="width:{{ r.fillWidth }};height:100%;background:{{ r.color }};"></div></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===================== VERIFIER ===================== -->
+      <sc-if value="{{ isVerifier }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;">
+          <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:24px;">
+            <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--tert);margin-bottom:14px;">VERIFY AN ATTESTATION</div>
+            <div style="font-size:13px;color:var(--sub);margin-bottom:12px;line-height:1.5;">Select a recent attestation, or paste a decision_hash / deploy hash / IPFS CID.</div>
+            <input placeholder="Paste decision_hash, deploy hash, or CID…" style="width:100%;background:var(--inset);border:1px solid var(--bd);border-radius:8px;padding:11px 13px;color:var(--ink);font-family:'Space Mono',monospace;font-size:12px;outline:none;margin-bottom:16px;"></input>
+            <div style="font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:var(--tert);margin-bottom:8px;">RECENT</div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <sc-for list="{{ verifierPicks }}" as="d" hint-placeholder-count="5">
+                <div data-id="{{ d.id }}" onClick="{{ onPick }}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;cursor:pointer;min-width:0;" style-hover="border-color:var(--acc)">
+                  <span style="width:7px;height:7px;border-radius:2px;background:{{ d.kindHex }};flex-shrink:0;"></span>
+                  <span style="font-size:12.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ d.summary }}</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--tert);flex-shrink:0;">{{ d.timeRel }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:24px;min-height:230px;">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--tert);margin-bottom:16px;">VERIFICATION</div>
+              <sc-if value="{{ verifyEmpty }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:30px 0;text-align:center;color:var(--tert);">
+                  <div style="width:42px;height:42px;border:1px dashed var(--bd2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">⛓</div>
+                  <div style="font-size:13px;">Select an attestation to run integrity + provenance checks.</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ verifyHasSteps }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:18px;">
+                  <sc-for list="{{ verifySteps }}" as="s" hint-placeholder-count="4">
+                    <div style="display:flex;gap:12px;align-items:flex-start;">
+                      <span style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:{{ s.iconColor }};border:1px solid {{ s.ringColor }};background:{{ s.bg }};{{ s.spin }}">{{ s.icon }}</span>
+                      <div style="min-width:0;"><div style="font-size:13px;color:var(--ink);">{{ s.label }}</div><sc-if value="{{ s.hasSub }}" hint-placeholder-val="{{ false }}"><div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.sub }}</div></sc-if></div>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ verifyDone }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:6px;display:flex;align-items:center;gap:10px;background:rgba(54,241,160,.1);border:1px solid rgba(54,241,160,.3);border-radius:10px;padding:12px 14px;">
+                      <span style="font-size:16px;">✓</span><div><div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--acc);">INTEGRITY + PROVENANCE: MATCH</div><div style="font-size:11.5px;color:var(--sub);margin-top:2px;">Logged decision is authentic, unaltered, and signed by the agent.</div></div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+            <div style="background:var(--panel2);border:1px solid var(--bd);border-radius:12px;padding:16px 18px;">
+              <div style="display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--amber);margin-bottom:8px;">⚠ DETERMINISM — AN HONEST NOTE</div>
+              <div style="font-size:12.5px;color:var(--sub);line-height:1.55;">Steward proves a logged decision is <strong style="color:var(--ink);">authentic, unaltered, and was made at time X by the agent</strong> — integrity and provenance. It does <strong style="color:var(--ink);">not</strong> claim the model will reproduce a byte-identical answer if re-run; modern LLMs use adaptive sampling. The attestation guarantees the record, not re-derivation.</div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===================== ABOUT ===================== -->
+      <sc-if value="{{ isAbout }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:18px;max-width:880px;">
+          <div style="background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:24px;">
+            <div style="font-size:22px;font-weight:600;letter-spacing:-.01em;">An autonomous treasury agent, made auditable.</div>
+            <div style="font-size:14px;color:var(--sub);line-height:1.6;margin-top:14px;">Steward runs a continuous loop over a live Casper treasury. Each cycle it observes on-chain state, decides on an allocation move under a fixed mandate, attests the decision to an on-chain journal, then acts via native auction staking.</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:22px;">
+              <div style="background:var(--inset);border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center;"><div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--acc);letter-spacing:.1em;">01</div><div style="font-weight:600;margin-top:6px;">Perceive</div><div style="font-size:11.5px;color:var(--tert);margin-top:6px;">Read auction + account state</div></div>
+              <div style="background:var(--inset);border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center;"><div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--acc);letter-spacing:.1em;">02</div><div style="font-weight:600;margin-top:6px;">Decide</div><div style="font-size:11.5px;color:var(--tert);margin-top:6px;">Reason under mandate limits</div></div>
+              <div style="background:var(--inset);border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center;"><div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--acc);letter-spacing:.1em;">03</div><div style="font-weight:600;margin-top:6px;">Attest</div><div style="font-size:11.5px;color:var(--tert);margin-top:6px;">Hash → IPFS → Journal contract</div></div>
+              <div style="background:var(--inset);border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center;"><div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--acc);letter-spacing:.1em;">04</div><div style="font-weight:600;margin-top:6px;">Act</div><div style="font-size:11.5px;color:var(--tert);margin-top:6px;">Delegate / redelegate on-chain</div></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+            <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:24px;">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--tert);margin-bottom:12px;">ON CASPER</div>
+              <div style="font-size:13px;color:var(--sub);line-height:1.6;">Native auction staking for delegations, a deployed Journal contract for attestations, and CEP-18 <span style="font-family:'Space Mono',monospace;color:var(--ink);">rwUSD</span> for the RWA allocation slice. All reads are client-side against Casper testnet.</div>
+            </div>
+            <div style="background:var(--panel2);border:1px solid var(--bd);border-radius:14px;padding:24px;">
+              <div style="display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--amber);margin-bottom:10px;">⚠ DETERMINISM</div>
+              <div style="font-size:12.5px;color:var(--sub);line-height:1.55;">We attest integrity and provenance — that the record is authentic and signed by the agent at time X. We do not claim byte-identical re-derivation of the model output. Stated plainly: it is a credibility feature, not a gap.</div>
+            </div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:24px;">
+            <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--tert);margin-bottom:14px;">REFERENCES</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;"><span style="font-size:12px;color:var(--sub);min-width:130px;">Journal contract</span><span data-copy="{{ contractHash }}" onClick="{{ onCopy }}" style="font-family:'Space Mono',monospace;font-size:11.5px;background:var(--inset);border:1px solid var(--bd);border-radius:6px;padding:5px 9px;cursor:pointer;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" style-hover="border-color:var(--acc)">{{ contractShort }}</span></div>
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;"><span style="font-size:12px;color:var(--sub);min-width:130px;">Agent public key</span><span data-copy="{{ agentKey }}" onClick="{{ onCopy }}" style="font-family:'Space Mono',monospace;font-size:11.5px;background:var(--inset);border:1px solid var(--bd);border-radius:6px;padding:5px 9px;cursor:pointer;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" style-hover="border-color:var(--acc)">{{ agentKeyShort }}</span></div>
+              <div style="display:flex;gap:18px;margin-top:6px;font-family:'Space Mono',monospace;font-size:12px;"><a href="#" style="color:var(--acc);text-decoration:none;" style-hover="text-decoration:underline">Repository →</a><a href="#" style="color:var(--acc);text-decoration:none;" style-hover="text-decoration:underline">Demo video →</a><a href="#" style="color:var(--acc);text-decoration:none;" style-hover="text-decoration:underline">Casper explorer →</a></div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </main>
+
+  <!-- DECISION DETAIL DRAWER -->
+  <sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrawer }}" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;"></div>
+    <div style="position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);background:var(--panel);border-left:1px solid var(--bd2);z-index:91;overflow-y:auto;animation:drawerIn .28s cubic-bezier(.2,.7,.2,1);box-shadow:-20px 0 60px var(--shadow);">
+      <div style="position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--bd);padding:18px 22px;display:flex;align-items:center;justify-content:space-between;z-index:2;">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;"><span style="font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.05em;color:{{ sel.kindHex }};background:{{ sel.kindBg }};border-radius:5px;padding:3px 8px;">{{ sel.kindLabel }}</span><span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--sub);">{{ sel.timeRel }}</span></div>
+        <div onClick="{{ closeDrawer }}" style="width:32px;height:32px;border:1px solid var(--bd2);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--sub);" style-hover="border-color:var(--acc)">✕</div>
+      </div>
+      <div style="padding:22px;">
+        <div style="font-size:20px;font-weight:600;line-height:1.3;letter-spacing:-.01em;">{{ sel.summary }}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:14px;"><div style="flex:1;height:5px;background:var(--inset);border-radius:3px;overflow:hidden;"><div style="width:{{ sel.confWidth }};height:100%;background:var(--acc);"></div></div><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);">confidence {{ sel.confPct }}</span></div>
+
+        <div style="font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:var(--tert);margin:22px 0 10px;">OBSERVED STATE</div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <sc-for list="{{ sel.observedList }}" as="o" hint-placeholder-count="4">
+            <div style="display:flex;justify-content:space-between;gap:12px;font-size:12.5px;border-bottom:1px solid var(--bd);padding-bottom:7px;"><span style="color:var(--sub);">{{ o.k }}</span><span style="font-family:'Space Mono',monospace;color:var(--ink);text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ o.v }}</span></div>
+          </sc-for>
+        </div>
+
+        <div style="font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:var(--tert);margin:22px 0 10px;">REASONING</div>
+        <sc-for list="{{ sel.reasoning }}" as="p" hint-placeholder-count="2">
+          <div style="font-size:13.5px;color:var(--sub);line-height:1.6;margin-bottom:9px;">{{ p }}</div>
+        </sc-for>
+
+        <div style="font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:var(--tert);margin:18px 0 10px;">RISK-LIMIT CHECKS</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <sc-for list="{{ sel.riskList }}" as="r" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:10px;font-size:12.5px;"><span style="color:var(--acc);">✓</span><span style="flex:1;color:var(--ink);">{{ r.label }}</span><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--sub);">{{ r.detail }}</span></div>
+          </sc-for>
+        </div>
+
+        <div style="font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:var(--tert);margin:22px 0 10px;">ON-CHAIN FACTS</div>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;flex-direction:column;gap:5px;"><span style="font-size:11px;color:var(--sub);">decision_hash</span><span data-copy="{{ sel.decision_hash }}" onClick="{{ onCopy }}" style="font-family:'Space Mono',monospace;font-size:11.5px;background:var(--inset);border:1px solid var(--bd);border-radius:6px;padding:8px 10px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" style-hover="border-color:var(--acc)" title="Copy">{{ sel.decision_hash }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:5px;"><span style="font-size:11px;color:var(--sub);">ipfs_cid</span><span data-copy="{{ sel.ipfs_cid }}" onClick="{{ onCopy }}" style="font-family:'Space Mono',monospace;font-size:11.5px;background:var(--inset);border:1px solid var(--bd);border-radius:6px;padding:8px 10px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" style-hover="border-color:var(--acc)" title="Copy">{{ sel.ipfs_cid }}</span></div>
+          <div style="display:flex;gap:9px;"><div style="flex:1;display:flex;flex-direction:column;gap:5px;min-width:0;"><span style="font-size:11px;color:var(--sub);">deploy hash</span><span data-copy="{{ sel.tx_hash }}" onClick="{{ onCopy }}" style="font-family:'Space Mono',monospace;font-size:11.5px;background:var(--inset);border:1px solid var(--bd);border-radius:6px;padding:8px 10px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" style-hover="border-color:var(--acc)" title="Copy">{{ sel.txShort }}</span></div><div style="width:96px;display:flex;flex-direction:column;gap:5px;"><span style="font-size:11px;color:var(--sub);">epoch</span><span style="font-family:'Space Mono',monospace;font-size:11.5px;background:var(--inset);border:1px solid var(--bd);border-radius:6px;padding:8px 10px;">{{ sel.epoch }}</span></div></div>
+        </div>
+
+        <div onClick="{{ onVerifySelected }}" style="margin-top:20px;display:flex;align-items:center;justify-content:center;gap:9px;background:var(--acc);color:var(--accink);border-radius:9px;padding:13px;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;letter-spacing:.03em;cursor:pointer;" style-hover="background:#5cf6b6">⛓ Verify on-chain integrity</div>
+
+        <sc-if value="{{ verifyForSel }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;background:var(--inset);border:1px solid var(--bd);border-radius:10px;padding:16px;">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <sc-for list="{{ verifySteps }}" as="s" hint-placeholder-count="4">
+                <div style="display:flex;gap:11px;align-items:flex-start;">
+                  <span style="width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:{{ s.iconColor }};border:1px solid {{ s.ringColor }};background:{{ s.bg }};{{ s.spin }}">{{ s.icon }}</span>
+                  <div style="min-width:0;"><div style="font-size:12.5px;">{{ s.label }}</div><sc-if value="{{ s.hasSub }}" hint-placeholder-val="{{ false }}"><div style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--sub);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.sub }}</div></sc-if></div>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ verifyDone }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:13px;display:flex;align-items:center;gap:9px;background:rgba(54,241,160,.1);border:1px solid rgba(54,241,160,.3);border-radius:9px;padding:11px 13px;"><span style="font-size:15px;">✓</span><span style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--acc);">MATCH — integrity + provenance verified</span></div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- TOAST -->
+  <sc-if value="{{ toastShow }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;right:22px;bottom:22px;z-index:95;background:var(--panel);border:1px solid var(--bd2);border-left:3px solid var(--acc);border-radius:11px;padding:14px 16px;box-shadow:0 18px 50px var(--shadow);animation:toastIn .3s ease;max-width:340px;">
+      <div style="display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:var(--acc);margin-bottom:6px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--acc);animation:pulseDot 1.6s infinite;"></span>NEW ATTESTATION ON-CHAIN</div>
+      <div style="font-size:13px;color:var(--ink);line-height:1.4;">{{ toast.summary }}</div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    view: 'dashboard', mobileNav: false, isMobile: false, light: false, hover: null,
+    filter: 'all', drawerOpen: false, selectedId: null,
+    decisions: [], attest: 1284, lastCycleMin: 4, nextSec: 648,
+    newId: null, toast: null,
+    verify: { id: null, steps: [], done: false }
+  };
+
+  AGENT = '01d4e9a7b3c2f8051a6e2d9c4b7f0a3e8d1c5b9270e4f6a8c3d2b1e09f7a6c5b4d3';
+  CONTRACT = 'hash-7f3c9ad41e8b6052c4d7a9e3b1f80a6d5c2b9e74f1a3608d2c5b9e07a4f6c3b1';
+
+  rhex(n) { const h = '0123456789abcdef'; let s = ''; for (let i = 0; i < n; i++) s += h[Math.floor(Math.random() * 16)]; return s; }
+  rcid() { const b = 'abcdefghijklmnopqrstuvwxyz234567'; let s = 'bafybei'; for (let i = 0; i < 52; i++) s += b[Math.floor(Math.random() * 32)]; return s; }
+
+  baseDecisions() {
+    const mk = (o) => Object.assign({ verified: true, ipfs_cid: this.rcid(), tx_hash: this.rhex(64), decision_hash: null }, o);
+    const obs = (extra) => Object.assign({ 'Treasury NAV': '2,418,330 CSPR', 'Staking APR': '11.4%', 'Active validators': '6', 'Top validator share': '25.3%' }, extra || {});
+    return [
+      mk({ id: 'd9', kind: 'redelegate', summary: 'Redelegated 18,000 CSPR — Stakin → Figment', conf: 0.86, minAgo: 4, epoch: 11472, block: 3920911,
+        observed: obs({ 'Figment uptime (30d)': '99.98%', 'Stakin uptime (30d)': '99.71%' }),
+        reasoning: ['Figment held a higher trailing-30-day uptime (99.98%) and lower missed-block rate than Stakin, while Stakin sat above its target weight after last epoch rewards.', 'Redelegating 18,000 CSPR moves Figment toward target while keeping post-move concentration at 25.9%, inside the 30% ceiling.'],
+        risk: [{ label: 'Max 30% to one validator', detail: '25.9% post-move' }, { label: 'Min 5 validators active', detail: '6 active' }, { label: 'Max single move 50,000 CSPR', detail: '18,000 CSPR' }] }),
+      mk({ id: 'd8', kind: 'hold', summary: 'Held position — all validators within tolerance', conf: 0.78, minAgo: 47, epoch: 11471, block: 3920402,
+        observed: obs({ 'Max drift from target': '1.8%', 'Tolerance band': '±3.0%' }),
+        reasoning: ['All six validators were within the ±3.0% drift tolerance and uptime thresholds were met across the set.', 'No move cleared the expected-benefit threshold net of transaction cost, so the agent held.'],
+        risk: [{ label: 'Drift within tolerance', detail: '1.8% max' }, { label: 'No uptime breach', detail: '6/6 healthy' }, { label: 'Hold permitted by mandate', detail: 'yes' }] }),
+      mk({ id: 'd7', kind: 'delegate', summary: 'Delegated 25,000 CSPR to Figment', conf: 0.82, minAgo: 96, epoch: 11470, block: 3919884,
+        observed: obs({ 'Undeployed balance': '25,400 CSPR', 'Figment share (pre)': '7.1%' }),
+        reasoning: ['Reward inflows left 25,400 CSPR undeployed; Figment was the most underweight validator against target with strong uptime.', 'Delegating 25,000 CSPR raises Figment toward target without breaching the per-validator ceiling.'],
+        risk: [{ label: 'Max 30% to one validator', detail: '9.6% post-move' }, { label: 'Keep ≥2% cash buffer', detail: '400 CSPR retained' }, { label: 'Max single move 50,000 CSPR', detail: '25,000 CSPR' }] }),
+      mk({ id: 'd6', kind: 'rebalance', summary: 'Rebalanced 3 validators toward target weights', conf: 0.74, minAgo: 184, epoch: 11468, block: 3918790,
+        observed: obs({ 'Validators rebalanced': '3', 'Aggregate drift (pre)': '4.6%' }),
+        reasoning: ['Cumulative drift across three validators exceeded the rebalance trigger after compounding rewards.', 'A 3-leg rebalance restored weights to within 0.9% of target at minimal redelegation cost.'],
+        risk: [{ label: 'Max 30% to one validator', detail: '25.3% max' }, { label: 'Min 5 validators active', detail: '6 active' }, { label: 'Max single move 50,000 CSPR', detail: '14,200 CSPR' }] }),
+      mk({ id: 'd5', kind: 'undelegate', summary: 'Undelegated 12,000 CSPR from BitConverter (uptime risk)', conf: 0.69, minAgo: 372, epoch: 11465, block: 3917211,
+        observed: obs({ 'BitConverter uptime (7d)': '98.40%', 'Uptime floor': '99.0%' }),
+        reasoning: ['BitConverter dropped below the 99.0% uptime floor over the trailing 7 days, breaching a soft risk limit.', 'The agent undelegated 12,000 CSPR to reduce exposure pending recovery, staying above the minimum validator count.'],
+        risk: [{ label: 'Uptime floor 99.0%', detail: 'breach mitigated' }, { label: 'Min 5 validators active', detail: '6 active' }, { label: 'Max single move 50,000 CSPR', detail: '12,000 CSPR' }] }),
+      mk({ id: 'd4', kind: 'redelegate', summary: 'Redelegated 9,500 CSPR — Ghost Stake → Casperholders', conf: 0.81, minAgo: 540, epoch: 11462, block: 3915980,
+        observed: obs({ 'Casperholders fee': '3.0%', 'Ghost Stake fee': '5.0%' }),
+        reasoning: ['Casperholders offered a lower commission with comparable uptime, improving net yield on the redelegated stake.', 'Move kept all weights inside target bands and within the per-validator ceiling.'],
+        risk: [{ label: 'Max 30% to one validator', detail: '25.3% post-move' }, { label: 'Net-yield improving', detail: '+0.06%' }, { label: 'Max single move 50,000 CSPR', detail: '9,500 CSPR' }] }),
+      mk({ id: 'd3', kind: 'delegate', summary: 'Delegated 40,000 CSPR across 4 validators', conf: 0.88, minAgo: 902, epoch: 11456, block: 3913004,
+        observed: obs({ 'Inflow deployed': '40,000 CSPR', 'Validators touched': '4' }),
+        reasoning: ['A larger reward batch was distributed across the four most underweight validators to minimize post-move drift.', 'Splitting the delegation avoided breaching any single-validator ceiling.'],
+        risk: [{ label: 'Max 30% to one validator', detail: '24.9% max' }, { label: 'Spread ≥3 validators', detail: '4 validators' }, { label: 'Max single move 50,000 CSPR', detail: '40,000 CSPR' }] }),
+      mk({ id: 'd2', kind: 'hold', summary: 'Held — within all mandate limits', conf: 0.76, minAgo: 1290, epoch: 11448, block: 3909112,
+        observed: obs({ 'Max drift from target': '1.2%', 'Tolerance band': '±3.0%' }),
+        reasoning: ['State was well inside tolerance with no uptime or fee changes worth acting on.', 'Holding preserved capital efficiency by avoiding unnecessary redelegation cost.'],
+        risk: [{ label: 'Drift within tolerance', detail: '1.2% max' }, { label: 'No uptime breach', detail: '6/6 healthy' }, { label: 'Hold permitted by mandate', detail: 'yes' }] }),
+      mk({ id: 'd1', kind: 'delegate', summary: 'Initial allocation: 2,300,000 CSPR across 6 validators', conf: 0.91, minAgo: 2880, epoch: 11400, block: 3885640,
+        observed: obs({ 'Initial deposit': '2,300,000 CSPR', 'Target validators': '6' }),
+        reasoning: ['The opening mandate cycle distributed the treasury across six vetted validators chosen on uptime, commission, and decentralization.', 'Weights were set to target with no validator exceeding the 30% ceiling.'],
+        risk: [{ label: 'Max 30% to one validator', detail: '25.3% max' }, { label: 'Min 5 validators active', detail: '6 active' }, { label: 'Diversification floor', detail: '6 validators' }] })
+    ];
+  }
+
+  POOL = [
+    { kind: 'redelegate', summary: 'Redelegated 6,200 CSPR — Stakin → Figment', conf: 0.84, observed: { 'Figment uptime (30d)': '99.98%', 'Stakin uptime (30d)': '99.69%', 'Treasury NAV': '2,418,330 CSPR' }, reasoning: ['Figment maintained a higher trailing-30-day uptime than Stakin and sat below target weight.', 'A 6,200 CSPR redelegation nudges weights to target while concentration stays at 25.9%.'], risk: [{ label: 'Max 30% to one validator', detail: '25.9% post-move' }, { label: 'Min 5 validators active', detail: '6 active' }, { label: 'Max single move 50,000 CSPR', detail: '6,200 CSPR' }], epoch: 11473, block: 3921420 },
+    { kind: 'rebalance', summary: 'Rebalanced 2 validators toward target weights', conf: 0.79, observed: { 'Validators rebalanced': '2', 'Aggregate drift (pre)': '3.4%', 'Treasury NAV': '2,418,330 CSPR' }, reasoning: ['Drift crossed the rebalance trigger on two validators after reward compounding.', 'A 2-leg rebalance restored weights to within 1.0% of target.'], risk: [{ label: 'Max 30% to one validator', detail: '25.3% max' }, { label: 'Min 5 validators active', detail: '6 active' }, { label: 'Max single move 50,000 CSPR', detail: '8,700 CSPR' }], epoch: 11474, block: 3921930 },
+    { kind: 'hold', summary: 'Held position — no action cleared cost threshold', conf: 0.77, observed: { 'Max drift from target': '1.5%', 'Tolerance band': '±3.0%', 'Treasury NAV': '2,418,330 CSPR' }, reasoning: ['All validators sat inside tolerance with healthy uptime.', 'No candidate move beat its transaction cost, so the agent held.'], risk: [{ label: 'Drift within tolerance', detail: '1.5% max' }, { label: 'No uptime breach', detail: '6/6 healthy' }, { label: 'Hold permitted by mandate', detail: 'yes' }] }
+  ];
+  poolIdx = 0;
+
+  VALIDATORS = [
+    { name: 'Casperholders', color: '#36F1A0', amount: '612,400 CSPR', share: '25.3%', uptime: '99.97%', rewards: '+9,840 CSPR', up: 1 },
+    { name: 'MAKE Stake', color: '#2bd4c0', amount: '480,100 CSPR', share: '19.9%', uptime: '99.94%', rewards: '+7,620 CSPR', up: 1 },
+    { name: 'Ghost Stake', color: '#2fa8e0', amount: '421,800 CSPR', share: '17.4%', uptime: '99.89%', rewards: '+6,510 CSPR', up: 1 },
+    { name: 'Figment', color: '#6c7be0', amount: '360,200 CSPR', share: '14.9%', uptime: '99.98%', rewards: '+5,940 CSPR', up: 1 },
+    { name: 'Stakin', color: '#c9a24b', amount: '312,000 CSPR', share: '12.9%', uptime: '99.71%', rewards: '+4,830 CSPR', up: 1 },
+    { name: 'BitConverter', color: '#4a5560', amount: '231,830 CSPR', share: '9.6%', uptime: '98.40%', rewards: '+3,680 CSPR', up: 0 }
+  ];
+
+  RISK = [
+    { label: 'Max 30% to one validator', statusText: '25.3% / 30%', frac: 25.3 / 30, ok: true },
+    { label: 'Minimum 5 validators', statusText: '6 / 5 min', frac: 1, ok: true },
+    { label: 'Max single move 50k CSPR', statusText: '18k / 50k', frac: 18 / 50, ok: true },
+    { label: 'Validator uptime floor 99%', statusText: '1 watch', frac: 0.86, ok: false }
+  ];
+
+  componentDidMount() {
+    this._timers = []; this._cleanups = [];
+    const decisions = this.baseDecisions();
+    this.setState({ decisions });
+    this.computeAll(decisions);
+    this.onResize = () => { const m = window.innerWidth < 900; if (m !== this.state.isMobile) this.setState({ isMobile: m, mobileNav: false }); };
+    this.onResize();
+    window.addEventListener('resize', this.onResize);
+    this._tick = setInterval(() => this.setState(s => ({ nextSec: s.nextSec > 0 ? s.nextSec - 1 : 0 })), 1000);
+    setTimeout(() => this.initScramble(), 60);
+    const t = setTimeout(() => this.runCycle(), 9000); this._timers.push(t);
+  }
+  componentWillUnmount() {
+    (this._timers || []).forEach(clearTimeout); clearInterval(this._tick);
+    window.removeEventListener('resize', this.onResize);
+    (this._cleanups || []).forEach(f => { try { f(); } catch (e) {} });
+  }
+
+  async sha256(str) { const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)); return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join(''); }
+  payload(d) { return JSON.stringify({ agent: this.AGENT, epoch: d.epoch, block: d.block, action: d.kind, summary: d.summary, observed: d.observed, reasoning: d.reasoning, risk: d.risk, confidence: d.conf }); }
+  async computeAll(decisions) { for (const d of decisions) { d.decision_hash = await this.sha256(this.payload(d)); } this.setState({ decisions: [...decisions] }); }
+
+  initScramble() {
+    const glyphs = 'ABCDEFGHJKLMNPQRSTUVWXYZ#%&/()=+*<>01';
+    document.querySelectorAll('[data-scramble]').forEach(node => {
+      const final = node.getAttribute('data-text') || node.textContent; node.textContent = final;
+      let raf = null, start = 0; const dur = 380;
+      const run = (ts) => { if (!start) start = ts; const p = Math.min((ts - start) / dur, 1); const rev = Math.floor(p * final.length); let out = ''; for (let i = 0; i < final.length; i++) { out += (i < rev || final[i] === ' ') ? final[i] : glyphs[Math.floor(Math.random() * glyphs.length)]; } node.textContent = out; if (p < 1) raf = requestAnimationFrame(run); else node.textContent = final; };
+      const onEnter = () => { start = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(run); };
+      node.addEventListener('mouseenter', onEnter);
+      this._cleanups.push(() => { node.removeEventListener('mouseenter', onEnter); cancelAnimationFrame(raf); });
+    });
+  }
+
+  go = (e) => { this.setState({ view: e.currentTarget.dataset.view, mobileNav: false, drawerOpen: false }); };
+  onNavEnter = (e) => { this.setState({ hover: e.currentTarget.dataset.view }); };
+  onNavLeave = () => { this.setState({ hover: null }); };
+  toggleNav = () => this.setState(s => ({ mobileNav: !s.mobileNav }));
+  closeNav = () => this.setState({ mobileNav: false });
+  setFilter = (e) => this.setState({ filter: e.currentTarget.dataset.filter });
+  openRow = (e) => { this.setState({ drawerOpen: true, selectedId: e.currentTarget.dataset.id, verify: { id: null, steps: [], done: false } }); };
+  closeDrawer = () => this.setState({ drawerOpen: false });
+  onPick = (e) => this.verifyNow(e.currentTarget.dataset.id);
+  onVerifySelected = () => this.verifyNow(this.state.selectedId);
+
+  themeVars(light) {
+    return light
+      ? { '--bg': '#eef1f0', '--panel': '#ffffff', '--panel2': '#f7f9f8', '--inset': '#eef2f1', '--bd': 'rgba(0,0,0,.09)', '--bd2': 'rgba(0,0,0,.15)', '--ink': '#0d1411', '--sub': '#566460', '--tert': '#8b948f', '--acc': '#10b277', '--accink': '#ffffff', '--shadow': 'rgba(0,0,0,.12)' }
+      : { '--bg': '#0a0c0e', '--panel': '#121519', '--panel2': '#161a20', '--inset': '#1b2027', '--bd': 'rgba(255,255,255,.07)', '--bd2': 'rgba(255,255,255,.13)', '--ink': '#e8eced', '--sub': '#9aa3a0', '--tert': '#5f6864', '--acc': '#36F1A0', '--accink': '#04130c', '--shadow': 'rgba(0,0,0,.45)' };
+  }
+  toggleTheme = () => {
+    const light = !this.state.light; const r = document.getElementById('app-root');
+    if (r) { const v = this.themeVars(light); Object.entries(v).forEach(([k, val]) => r.style.setProperty(k, val)); }
+    this.setState({ light });
+  };
+
+  onCopy = (e) => { const t = e.currentTarget; const v = t.dataset.copy; try { navigator.clipboard && navigator.clipboard.writeText(v); } catch (x) {} const old = t.textContent; t.textContent = 'copied ✓'; const tm = setTimeout(() => { t.textContent = old; }, 1100); this._timers.push(tm); };
+
+  runCycle = async () => {
+    const c = this.POOL[this.poolIdx % this.POOL.length]; this.poolIdx++;
+    const d = { id: 'live-' + Date.now(), kind: c.kind, summary: c.summary, conf: c.conf, observed: c.observed, reasoning: c.reasoning, risk: c.risk, epoch: (c.epoch || 11475) + this.poolIdx, block: (c.block || 3922000) + this.poolIdx * 510, minAgo: 0, verified: true, ipfs_cid: this.rcid(), tx_hash: this.rhex(64), decision_hash: null };
+    d.decision_hash = await this.sha256(this.payload(d));
+    this.setState(s => ({ decisions: [d, ...s.decisions], attest: s.attest + 1, lastCycleMin: 0, nextSec: 720, newId: d.id, toast: { summary: c.summary } }));
+    const t1 = setTimeout(() => this.setState({ newId: null }), 2600); this._timers.push(t1);
+    const t2 = setTimeout(() => this.setState({ toast: null }), 4400); this._timers.push(t2);
+  };
+
+  sleep(ms) { return new Promise(r => { const t = setTimeout(r, ms); this._timers.push(t); }); }
+  async verifyNow(id) {
+    const d = this.state.decisions.find(x => x.id === id); if (!d) return;
+    const base = [
+      { label: 'Attestation located on-chain (Journal contract)', s: 'active' },
+      { label: 'IPFS payload fetched via Pinata gateway', s: 'idle' },
+      { label: 'Integrity: sha256(payload) == decision_hash', s: 'idle' },
+      { label: 'Provenance: signed by agent key', s: 'idle' }
+    ];
+    const setSteps = (steps, done) => this.setState({ verify: { id, steps, done: !!done } });
+    setSteps(base.map(x => ({ ...x })), false);
+    const upd = (arr, i, s, sub) => arr.map((x, k) => k === i ? { ...x, s, sub: sub != null ? sub : x.sub } : x);
+    let st = base.map(x => ({ ...x }));
+    await this.sleep(480); st = upd(st, 0, 'ok'); st = upd(st, 1, 'active'); setSteps(st, false);
+    await this.sleep(560); st = upd(st, 1, 'ok', d.ipfs_cid.slice(0, 22) + '…'); st = upd(st, 2, 'active'); setSteps(st, false);
+    const h = await this.sha256(this.payload(d)); const match = h === d.decision_hash;
+    await this.sleep(560); st = upd(st, 2, match ? 'ok' : 'fail', h.slice(0, 18) + '… == ' + d.decision_hash.slice(0, 6) + '…'); st = upd(st, 3, 'active'); setSteps(st, false);
+    await this.sleep(420); st = upd(st, 3, 'ok', this.AGENT.slice(0, 18) + '…'); setSteps(st, true);
+  }
+
+  fmt(n) { return n.toLocaleString('en-US'); }
+  relTime(min) { if (min <= 0) return 'just now'; if (min < 60) return min + 'm ago'; const h = Math.floor(min / 60); if (h < 24) return h + 'h ago'; return Math.floor(h / 24) + 'd ago'; }
+  kindMeta(k) {
+    const m = { delegate: ['DELEGATE', '#36F1A0', 'rgba(54,241,160,.12)'], redelegate: ['REDELEGATE', '#2fa8e0', 'rgba(47,168,224,.14)'], rebalance: ['REBALANCE', '#6c7be0', 'rgba(108,123,224,.16)'], undelegate: ['UNDELEGATE', '#f5b544', 'rgba(245,181,68,.14)'], hold: ['HOLD', '#9aa3a0', 'rgba(154,163,160,.14)'] };
+    return m[k] || m.hold;
+  }
+  shortHash(h) { return h ? h.slice(0, 10) + '…' + h.slice(-8) : '— computing —'; }
+  vd(d) {
+    const [label, hex, bg] = this.kindMeta(d.kind); const pct = Math.round(d.conf * 100);
+    return { id: d.id, kind: d.kind, kindLabel: label, kindHex: hex, kindBg: bg, summary: d.summary, confPct: pct + '%', confWidth: pct + '%', timeRel: this.relTime(d.minAgo), epoch: d.epoch, ipfs_cid: d.ipfs_cid, tx_hash: d.tx_hash, txShort: this.shortHash(d.tx_hash), decision_hash: d.decision_hash || '— computing —', dhashShort: this.shortHash(d.decision_hash), isNew: d.id === this.state.newId, rowExtra: d.id === this.state.newId ? 'animation:newFlash 2.4s ease-out;' : '', reason0: d.reasoning[0] };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const titles = { dashboard: ['Cockpit', 'OVERVIEW'], decisions: ['Decision Journal', 'LIVE FEED'], treasury: ['Treasury', 'ALLOCATION'], verifier: ['Verifier', 'TRUST'], about: ['About Steward', 'DOCS'] };
+    const nav = [
+      { label: 'Dashboard', view: 'dashboard', icon: '◧' }, { label: 'Decisions', view: 'decisions', icon: '≣' },
+      { label: 'Treasury', view: 'treasury', icon: '◑' }, { label: 'Verifier', view: 'verifier', icon: '✓' }, { label: 'About', view: 'about', icon: 'ⓘ' }
+    ];
+    const navItems = nav.map(n => {
+      const active = s.view === n.view;
+      const base = 'display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;cursor:pointer;transition:background .14s ease,color .14s ease,box-shadow .14s ease;';
+      return { ...n, style: base + (active ? 'color:var(--acc);background:var(--inset);box-shadow:inset 2px 0 0 var(--acc);' : '') };
+    });
+
+    const all = s.decisions.map(d => this.vd(d));
+    const view = s.filter === 'all' ? all : all.filter(d => d.kind === s.filter);
+    const chips = [['all', 'All'], ['delegate', 'Delegate'], ['redelegate', 'Redelegate'], ['rebalance', 'Rebalance'], ['undelegate', 'Undelegate'], ['hold', 'Hold']].map(([f, l]) => ({ filter: f, label: l, style: 'font-family:\'Space Mono\',monospace;font-size:11px;letter-spacing:.04em;padding:7px 13px;border-radius:8px;cursor:pointer;border:1px solid ' + (s.filter === f ? 'var(--acc)' : 'var(--bd2)') + ';color:' + (s.filter === f ? 'var(--acc)' : 'var(--sub)') + ';background:' + (s.filter === f ? 'rgba(54,241,160,.08)' : 'transparent') + ';' }));
+
+    const validators = this.VALIDATORS.map(v => ({ name: v.name, color: v.color, amount: v.amount, share: v.share, uptime: v.uptime, rewards: v.rewards, pubShort: '01' + v.name.toLowerCase().replace(/[^a-z]/g, '').slice(0, 6) + '…' + this.rhexStable(v.name), uptimeColor: v.up ? 'var(--ink)' : 'var(--amber)' }));
+
+    const riskItems = this.RISK.map(r => ({ label: r.label, statusText: r.statusText, color: r.ok ? 'var(--acc)' : 'var(--amber)', fillWidth: Math.min(100, Math.round(r.frac * 100)) + '%' }));
+
+    const sd = s.decisions.find(d => d.id === s.selectedId);
+    let sel = null;
+    if (sd) {
+      const base = this.vd(sd);
+      sel = { ...base, observedList: Object.entries(sd.observed).map(([k, v]) => ({ k, v })), reasoning: sd.reasoning, riskList: sd.risk };
+    }
+
+    const vsteps = (s.verify.steps || []).map(st => {
+      const map = { idle: ['○', 'var(--tert)', 'var(--bd2)', 'transparent', ''], active: ['◐', 'var(--acc)', 'var(--acc)', 'transparent', 'animation:spin 1s linear infinite;'], ok: ['✓', 'var(--accink)', 'var(--acc)', 'var(--acc)', ''], fail: ['✕', '#fff', 'var(--red)', 'var(--red)', ''] };
+      const [icon, iconColor, ringColor, bg, spin] = map[st.s] || map.idle;
+      return { label: st.label, icon, iconColor, ringColor, bg, spin, hasSub: !!st.sub, sub: st.sub || '' };
+    });
+
+    return {
+      go: this.go, onNavEnter: this.onNavEnter, onNavLeave: this.onNavLeave, toggleNav: this.toggleNav, closeNav: this.closeNav, setFilter: this.setFilter, openRow: this.openRow, closeDrawer: this.closeDrawer, runCycle: this.runCycle, onCopy: this.onCopy, toggleTheme: this.toggleTheme, onPick: this.onPick, onVerifySelected: this.onVerifySelected,
+      navItems, themeIcon: s.light ? '☀' : '☾',
+      isMobile: s.isMobile, mobileNav: s.mobileNav, showBackdrop: s.isMobile && s.mobileNav,
+      sidebarStyle: s.isMobile
+        ? 'position:fixed;left:0;top:0;bottom:0;width:268px;z-index:80;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--bd);transform:translateX(' + (s.mobileNav ? '0' : '-105%') + ');transition:transform .28s cubic-bezier(.2,.7,.2,1);'
+        : 'position:fixed;left:0;top:0;bottom:0;width:248px;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--bd);z-index:30;',
+      mainStyle: 'margin-left:' + (s.isMobile ? '0' : '248px') + ';min-height:100dvh;',
+      topbarPadLeft: s.isMobile ? '72px' : '34px',
+      crumb: 'STEWARD / ' + titles[s.view][1], pageTitle: titles[s.view][0],
+      isDashboard: s.view === 'dashboard', isDecisions: s.view === 'decisions', isTreasury: s.view === 'treasury', isVerifier: s.view === 'verifier', isAbout: s.view === 'about',
+      attestFmt: this.fmt(s.attest), lastCycleLabel: this.relTime(s.lastCycleMin), nextLabel: this.mmss(s.nextSec),
+      latest: all[0] || {}, validators, riskItems,
+      decisionsView: view, filteredCount: view.length, filterChips: chips, miniFeed: all.slice(0, 5),
+      drawerOpen: s.drawerOpen, sel, hasSelected: !!sel,
+      verifySteps: vsteps, verifyHasSteps: vsteps.length > 0, verifyEmpty: vsteps.length === 0, verifyDone: s.verify.done, verifyForSel: s.verify.id === s.selectedId && vsteps.length > 0,
+      verifierPicks: all.slice(0, 5),
+      toast: s.toast || { summary: '' }, toastShow: !!s.toast,
+      agentKey: this.AGENT, agentKeyShort: this.AGENT.slice(0, 12) + '…' + this.AGENT.slice(-8),
+      contractHash: this.CONTRACT, contractShort: this.CONTRACT.slice(0, 18) + '…' + this.CONTRACT.slice(-8)
+    };
+  }
+  rhexStable(seed) { let h = 0; for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0; return h.toString(16).padStart(8, '0').slice(0, 6); }
+  mmss(sec) { const m = Math.floor(sec / 60), x = sec % 60; return (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x; }
+}
+</script>
+</body>
+</html>

@@ -158,6 +158,8 @@ export const kindIcon: Record<string, (p: P) => React.JSX.Element> = {
   ),
 };
 
+// Action-kind tints mirror the Claude Design legend:
+// delegate=mint, redelegate=cyan, rebalance=violet, undelegate=amber, hold=grey.
 export function kindTint(kind: string): string {
   switch (kind) {
     case "delegate":
@@ -165,9 +167,19 @@ export function kindTint(kind: string): string {
     case "undelegate":
       return "var(--amber)";
     case "redelegate":
+      return "var(--cyan)";
     case "rebalance":
-      return "var(--accent)";
+      return "var(--violet)";
     default:
       return "var(--ink-2)";
   }
 }
+
+// Monospace glyphs for the sidebar / landing nav (terminal-cockpit feel).
+export const navGlyph: Record<string, string> = {
+  dashboard: "◧",
+  decisions: "≣",
+  treasury: "◑",
+  verifier: "✓",
+  about: "ⓘ",
+};

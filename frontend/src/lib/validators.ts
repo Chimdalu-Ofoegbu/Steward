@@ -9,14 +9,16 @@ const KNOWN: Record<string, string> = {
   "0106ca7c39cd272dbf21a86eeb3b36b7c26e2e9b94af64292419f7862936bca2ca": "Top-weight validator",
 };
 
+// Slice palette mirrors the Claude Design allocation donut (mint → teal → cyan →
+// violet → gold → slate). Stable per index so colors don't shuffle between reads.
 export const PALETTE = [
-  "#22D3EE",
-  "#34D399",
-  "#818CF8",
-  "#FBBF24",
-  "#F472B6",
-  "#60A5FA",
-  "#FB923C",
+  "#36F1A0",
+  "#2bd4c0",
+  "#2fa8e0",
+  "#6c7be0",
+  "#c9a24b",
+  "#4a5560",
+  "#f5b544",
 ];
 
 export function validatorName(key: string): string {

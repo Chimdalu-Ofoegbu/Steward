@@ -2,217 +2,158 @@
 import * as React from "react";
 import Link from "next/link";
 import { useFetch } from "@/lib/useFetch";
-import { PUBLIC_CONFIG } from "@/lib/config";
+import { ScrambleText } from "@/components/ScrambleText";
 import type { TreasuryData, JournalEntry } from "@/lib/types";
-import { nfCspr, nfInt, relTime, confPct } from "@/lib/format";
-import { validatorName, validatorColor } from "@/lib/validators";
-import { Section, KpiCard, AllocationDonut } from "@/components/cards";
-import { HashChip, LinkChip, KindPill, VerifiedBadge, EmptyState } from "@/components/primitives";
-import { DecisionDrawer, summarize } from "@/components/DecisionDrawer";
-import { Coins, Trend, Layers, Activity, Bot, Arrow, Check, kindIcon, kindTint } from "@/components/icons";
 
-const explorer = PUBLIC_CONFIG.explorer;
-const pad = { padding: "20px 22px 28px" };
+const NAV = [
+  { label: "Terminal", href: "/dashboard" },
+  { label: "Decisions", href: "/decisions" },
+  { label: "Treasury", href: "/treasury" },
+  { label: "Verifier", href: "/verifier" },
+  { label: "About", href: "/about" },
+];
 
-export default function OverviewPage() {
-  const treasury = useFetch<TreasuryData>("/api/treasury", 20000);
-  const journal = useFetch<{ entries: JournalEntry[] }>("/api/journal", 20000);
-  const [selected, setSelected] = React.useState<JournalEntry | null>(null);
+function compact(n: number): string {
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return String(Math.round(n));
+}
 
+export default function Landing() {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const treasury = useFetch<TreasuryData>("/api/treasury");
+  const journal = useFetch<{ entries: JournalEntry[] }>("/api/journal");
   const t = treasury.data;
-  const entries = journal.data?.entries ?? [];
-  const latest = entries[0] ?? null;
+  const decisions = journal.data?.entries.length;
 
-  const allocSlices = (t?.delegations ?? []).map((d, i) => ({
-    name: validatorName(d.validator),
-    value: d.amount_cspr,
-    color: validatorColor(i),
-  }));
-  if (t && t.liquid_cspr > 0) allocSlices.push({ name: "Liquid (unstaked)", value: t.liquid_cspr, color: "var(--ink-3)" as string });
+  // ASCII phosphor field — ported from the Claude Design handoff (support.js initAscii).
+  React.useEffect(() => {
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const cv = canvasRef.current;
+    if (!cv || reduce) return;
+    const ctx = cv.getContext("2d");
+    if (!ctx) return;
+    let W = 0, H = 0;
+    const fit = () => {
+      W = cv.width = window.innerWidth;
+      H = cv.height = window.innerHeight;
+      ctx.font = '12px "Space Mono", monospace';
+      ctx.textBaseline = "top";
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    const cell = 17, ramp = " .·:-=+*o░▒▓█";
+    const NC = 14, colorCache: string[] = [];
+    for (let i = 0; i < NC; i++) colorCache.push("rgba(54,241,160," + (0.1 + (i / (NC - 1)) * 0.66).toFixed(3) + ")");
+    let mx = W * 0.68, my = H * 0.42, tmx = mx, tmy = my;
+    const onMove = (e: MouseEvent) => {
+      const r = cv.getBoundingClientRect();
+      tmx = ((e.clientX - r.left) / r.width) * cv.width;
+      tmy = ((e.clientY - r.top) / r.height) * cv.height;
+    };
+    window.addEventListener("mousemove", onMove);
+    let raf = 0, last = 0;
+    const draw = (ts: number) => {
+      raf = requestAnimationFrame(draw);
+      if (document.hidden) return;
+      if (ts - last < 22) return;
+      last = ts;
+      mx += (tmx - mx) * 0.32;
+      my += (tmy - my) * 0.32;
+      ctx.fillStyle = "#070809";
+      ctx.fillRect(0, 0, W, H);
+      const time = ts * 0.0013;
+      const cols = Math.ceil(W / cell), rows = Math.ceil(H / cell);
+      const rl = ramp.length - 1, nc = NC - 1;
+      for (let gy = 0; gy < rows; gy++) {
+        const py = gy * cell;
+        for (let gx = 0; gx < cols; gx++) {
+          const px = gx * cell;
+          const wave = Math.sin(px * 0.013 + time * 1.8) + Math.cos(py * 0.017 - time * 1.4) + Math.sin((px + py) * 0.009 + time);
+          const dx = px - mx, dy = py - my;
+          const infl = Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy) / 300);
+          let v = (wave / 3) * 0.5 + 0.45 + infl * 1.05;
+          if (v < 0.16) continue;
+          if (v > 1) v = 1;
+          const ch = ramp[(v * rl) | 0];
+          if (ch === " ") continue;
+          ctx.fillStyle = colorCache[(v * nc) | 0];
+          ctx.fillText(ch, px, py);
+        }
+      }
+    };
+    raf = requestAnimationFrame(draw);
+    return () => {
+      window.removeEventListener("resize", fit);
+      window.removeEventListener("mousemove", onMove);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  const ticker: React.ReactNode[] = [
+    <>TREASURY NAV <b style={{ color: "#fff" }}>{t ? `${compact(t.total_cspr)} CSPR` : "…"}</b></>,
+    <>STAKING APR <b style={{ color: "#36F1A0" }}>≈ 11.4%</b> <i style={{ color: "#7d847f", fontStyle: "normal" }}>(sample)</i></>,
+    <>VALIDATORS <b style={{ color: "#fff" }}>{t ? t.delegation_count : "…"}</b></>,
+    <>DECISIONS ATTESTED <b style={{ color: "#fff" }}>{decisions ?? "…"}</b></>,
+    <>NETWORK <b style={{ color: "#fff" }}>casper-test</b></>,
+    <>STATUS <b style={{ color: "#36F1A0" }}>AGENT LIVE</b></>,
+  ];
 
   return (
-    <div style={pad}>
-      {/* KPI row */}
-      <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", marginBottom: 16 }}>
-        <KpiCard
-          icon={<Coins size={16} />}
-          tint="var(--accent)"
-          label="Treasury value"
-          value={t ? `${nfCspr(t.total_cspr, 0)} CSPR` : treasury.loading ? "…" : "—"}
-          sub={t ? `${nfCspr(t.liquid_cspr, 0)} liquid` : ""}
-          subTint="var(--ink-2)"
-          sub2={t ? `· ${nfCspr(t.delegated_cspr, 0)} staked` : ""}
-        />
-        <KpiCard
-          icon={<Layers size={16} />}
-          tint="var(--green)"
-          label="Delegated"
-          value={t ? `${nfCspr(t.delegated_cspr, 0)} CSPR` : "—"}
-          sub={t ? `${t.delegation_count} validator${t.delegation_count === 1 ? "" : "s"}` : ""}
-          subTint="var(--ink-2)"
-        />
-        <KpiCard
-          icon={<Trend size={16} />}
-          tint="var(--amber)"
-          label="Staking yield"
-          value="n/a"
-          sub="testnet — no rewards"
-          subTint="var(--ink-3)"
-        />
-        <KpiCard
-          icon={<Activity size={16} />}
-          tint="var(--accent)"
-          label="Decisions attested"
-          value={journal.data ? nfInt(entries.length) : "—"}
-          sub="on-chain"
-          subTint="var(--ink-2)"
-        />
-      </div>
+    <div style={{ position: "relative", width: "100vw", height: "100dvh", overflow: "hidden", background: "#080a0c", fontFamily: "'Schibsted Grotesk', sans-serif", color: "#E8ECEA" }}>
+      <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1, opacity: 0.92 }} />
+      <div style={{ position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none", background: "linear-gradient(90deg,rgba(8,10,12,.97) 0%,rgba(8,10,12,.88) 32%,rgba(8,10,12,.5) 64%,rgba(8,10,12,.14) 100%)" }} />
+      <div style={{ position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none", background: "repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0px,rgba(0,0,0,.16) 1px,transparent 1px,transparent 3px)", opacity: 0.35 }} />
 
-      <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,1.5fr) minmax(0,1fr)" }}>
-        {/* left column */}
-        <div className="flex flex-col gap-4" style={{ minWidth: 0 }}>
-          {/* latest decision */}
-          <section className="panel" style={{ position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", inset: "0 auto 0 0", width: 3, background: "linear-gradient(var(--accent),transparent)" }} />
-            <div className="flex items-center justify-between" style={{ padding: "15px 18px 13px", borderBottom: "1px solid var(--border)" }}>
-              <div className="flex items-center gap-2.5">
-                <span className="eyebrow">Latest decision</span>
-                {latest && <span className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>epoch {latest.epoch}</span>}
-              </div>
-              {latest && <VerifiedBadge verified />}
-            </div>
-            {latest ? (
-              <LatestBody entry={latest} onInspect={() => setSelected(latest)} />
-            ) : journal.loading ? (
-              <div style={{ padding: 24 }}>
-                <div className="rounded-xl" style={{ height: 80, background: "var(--inset)", opacity: 0.5 }} />
-              </div>
-            ) : (
-              <EmptyState icon={<Activity size={20} />} title="No decisions yet" body="The agent has not posted an attestation. The first cycle will appear here." />
-            )}
-          </section>
-
-          {/* mini feed */}
-          <Section title="Decision stream" right={<Link href="/decisions" style={navLink}>View all <Arrow size={13} /></Link>}>
-            {entries.length === 0 ? (
-              <EmptyState icon={<Activity size={20} />} title="Feed is empty" />
-            ) : (
-              <div>
-                {entries.slice(0, 5).map((r) => (
-                  <button
-                    key={r.decision_hash}
-                    onClick={() => setSelected(r)}
-                    className="flex items-center gap-2.5 w-full text-left"
-                    style={{ padding: "12px 18px", borderBottom: "1px solid var(--border)", background: "transparent" }}
-                  >
-                    <span className="mono" style={{ fontSize: 11.5, color: "var(--ink-3)", width: 46, flex: "none" }}>{relTime(r.timestamp)}</span>
-                    <KindPill kind={r.action} tint={kindTint(r.action)} />
-                    <span className="truncate" style={{ flex: 1, minWidth: 0, fontSize: 13, color: "var(--ink)" }}>{summarize(r)}</span>
-                    <span style={{ color: "var(--green)", flex: "none" }} title="Verified on-chain"><Check size={15} /></span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </Section>
-        </div>
-
-        {/* right column */}
-        <div className="flex flex-col gap-4" style={{ minWidth: 0 }}>
-          {/* agent identity */}
-          <section className="panel" style={{ padding: "16px 17px" }}>
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 10, background: "var(--accent-dim)", border: "1px solid var(--accent-line)", flex: "none", color: "var(--accent)" }}>
-                <Bot size={20} />
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div className="disp" style={{ fontWeight: 600, fontSize: 15, color: "var(--ink)" }}>Claude Opus 4.8</div>
-                <div style={{ fontSize: 11.5, color: "var(--ink-2)" }}>
-                  Conservative Yield Mandate · <span className="mono" style={{ color: "var(--ink-3)" }}>v1</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col" style={{ marginTop: 14, gap: 9 }}>
-              <IdRow label="Agent key">
-                <HashChip value={PUBLIC_CONFIG.agentPublicKeyHex} head={8} tail={6} />
-              </IdRow>
-              <IdRow label="Journal contract">
-                <LinkChip value={PUBLIC_CONFIG.journalPackageHash} href={`${explorer}/contract-package/${PUBLIC_CONFIG.journalPackageHash}`} head={8} tail={6} />
-              </IdRow>
-              <IdRow label="Network">
-                <span className="mono" style={{ fontSize: 12.5, color: "var(--ink-2)" }}>casper-test · {entries.length} attested</span>
-              </IdRow>
-            </div>
-          </section>
-
-          {/* allocation donut */}
-          <section className="panel" style={{ padding: "16px 17px" }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
-              <span className="eyebrow">Allocation</span>
-              <Link href="/treasury" style={navLink}>Treasury <Arrow size={13} /></Link>
-            </div>
-            {allocSlices.length > 0 ? (
-              <AllocationDonut slices={allocSlices} centerLabel={String(t?.delegation_count ?? 0)} centerSub="validators" />
-            ) : treasury.loading ? (
-              <div className="rounded-xl" style={{ height: 128, background: "var(--inset)", opacity: 0.5 }} />
-            ) : (
-              <EmptyState title="No allocation yet" />
-            )}
-          </section>
-        </div>
-      </div>
-
-      {selected && <DecisionDrawer entry={selected} onClose={() => setSelected(null)} />}
-    </div>
-  );
-}
-
-const navLink: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 5,
-  color: "var(--accent)",
-  fontSize: 12,
-  fontWeight: 600,
-  textDecoration: "none",
-};
-
-function IdRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <span style={{ fontSize: 11, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.4px" }}>{label}</span>
-      {children}
-    </div>
-  );
-}
-
-function LatestBody({ entry, onInspect }: { entry: JournalEntry; onInspect: () => void }) {
-  const tint = kindTint(entry.action);
-  const KindIcon = kindIcon[entry.action] ?? kindIcon.hold;
-  return (
-    <div style={{ padding: "17px 18px 18px" }}>
-      <div className="flex items-start gap-3">
-        <div className="flex items-center justify-center" style={{ width: 36, height: 36, borderRadius: 9, flex: "none", color: tint, background: "color-mix(in srgb, currentColor 12%, transparent)", border: `1px solid color-mix(in srgb, ${tint} 28%, transparent)` }}>
-          <KindIcon size={17} />
-        </div>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="disp" style={{ fontWeight: 600, fontSize: 17, color: "var(--ink)", textTransform: "capitalize" }}>{entry.action}</span>
-            <span className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>conf {confPct(entry.confidence)}</span>
+      <div style={{ position: "relative", zIndex: 3, height: "100%", display: "flex", flexDirection: "column" }}>
+        {/* top bar */}
+        <div className="flex items-center justify-between" style={{ padding: "26px clamp(20px,4vw,56px)", borderBottom: "1px solid rgba(255,255,255,.07)" }}>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center" style={{ width: 24, height: 24, border: "1.5px solid #36F1A0", borderRadius: 6, fontFamily: "'Space Mono',monospace", fontSize: 13, color: "#36F1A0", fontWeight: 700 }}>S</div>
+            <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 16, letterSpacing: "0.24em", fontWeight: 700 }}>STEWARD</span>
           </div>
-          <p style={{ margin: "6px 0 0", fontSize: 15, color: "var(--ink)", lineHeight: 1.45 }}>{summarize(entry)}</p>
-          <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            {entry.rationale.length > 240 ? entry.rationale.slice(0, 240).trimEnd() + "…" : entry.rationale}
-          </p>
+          <div className="hidden md:flex" style={{ gap: 32, fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8b94a0" }}>
+            {NAV.map((n) => (
+              <Link key={n.href} href={n.href} style={{ textDecoration: "none", color: "inherit" }} className="stw-land-nav">
+                <ScrambleText text={n.label} />
+              </Link>
+            ))}
+          </div>
+          <div style={{ width: 120 }} className="hidden md:block" />
         </div>
-      </div>
-      <div className="flex flex-wrap gap-2" style={{ marginTop: 15, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
-        <HashChip value={entry.decision_hash} label="HASH" head={6} tail={6} />
-        <HashChip value={entry.cid} label="CID" head={6} tail={6} />
-        <LinkChip value={entry.attestation_txn} href={`${explorer}/transaction/${entry.attestation_txn}`} label="TX" head={6} tail={6} />
-        <button onClick={onInspect} style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 13px", borderRadius: 8, border: "1px solid var(--accent-line)", background: "var(--accent-dim)", color: "var(--accent)", fontSize: 12.5, fontWeight: 600 }}>
-          Inspect <Arrow size={13} />
-        </button>
+
+        {/* hero */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 clamp(20px,6vw,90px)", gap: "clamp(16px,2.4vh,24px)" }}>
+          <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 13, letterSpacing: "0.26em", color: "#36F1A0", animation: "stw-intro-up .7s cubic-bezier(.2,.7,.2,1) both", animationDelay: ".05s" }}>// AUTONOMOUS TREASURY AGENT · CASPER NETWORK</div>
+          <div style={{ fontWeight: 600, fontSize: "clamp(40px,7vw,82px)", lineHeight: 0.98, letterSpacing: "-0.025em", maxWidth: "18ch", textWrap: "balance", animation: "stw-intro-up .8s cubic-bezier(.2,.7,.2,1) both", animationDelay: ".16s" } as React.CSSProperties}>
+            Capital on autopilot.<br />Every move <span style={{ color: "#36F1A0" }}>on the record.</span>
+            <span style={{ display: "inline-block", width: "clamp(13px,1.6vw,22px)", height: "clamp(34px,4.6vw,60px)", background: "#36F1A0", marginLeft: 10, transform: "translateY(8px)", animation: "stw-blink 1.1s steps(1) infinite" }} />
+          </div>
+          <div style={{ fontSize: "clamp(15px,1.7vw,18px)", lineHeight: 1.55, color: "#9aa3a0", maxWidth: "58ch", animation: "stw-intro-up .8s cubic-bezier(.2,.7,.2,1) both", animationDelay: ".28s" }}>
+            Steward perceives, decides, and acts on a live Casper treasury — attesting every decision to an on-chain journal anyone can independently verify.
+          </div>
+          <div className="flex flex-wrap" style={{ gap: 14, marginTop: 8, animation: "stw-intro-up .8s cubic-bezier(.2,.7,.2,1) both", animationDelay: ".4s" }}>
+            <Link href="/dashboard" className="stw-btn-accent flex items-center gap-2.5" style={{ padding: "16px 26px", borderRadius: 9, fontFamily: "'Space Mono',monospace", fontSize: 14, fontWeight: 700, letterSpacing: "0.03em", textDecoration: "none" }}>Enter the terminal →</Link>
+            <a href="#" className="flex items-center gap-2.5" style={{ border: "1px solid rgba(255,255,255,.16)", color: "#E8ECEA", padding: "16px 26px", borderRadius: 9, fontFamily: "'Space Mono',monospace", fontSize: 14, letterSpacing: "0.03em", textDecoration: "none" }}>▶ Watch demo</a>
+          </div>
+        </div>
+
+        {/* ticker */}
+        <div style={{ height: 48, borderTop: "1px solid rgba(255,255,255,.07)", background: "rgba(0,0,0,.4)", overflow: "hidden", display: "flex", alignItems: "center" }}>
+          <div className="flex items-center gap-2" style={{ flex: "none", padding: "0 18px", borderRight: "1px solid rgba(255,255,255,.07)", height: "100%", fontFamily: "'Space Mono',monospace", fontSize: 11, letterSpacing: "0.1em", color: "#36F1A0" }}>
+            <span className="animate-stw-pulse" style={{ width: 7, height: 7, borderRadius: "50%", background: "#36F1A0" }} />LIVE
+          </div>
+          <div style={{ overflow: "hidden", flex: 1 }}>
+            <div style={{ display: "flex", width: "max-content", animation: "stw-ticker 38s linear infinite", fontFamily: "'Space Mono',monospace", fontSize: 12, color: "#b9c1bd", whiteSpace: "nowrap" }}>
+              {[...ticker, ...ticker].map((item, i) => (
+                <React.Fragment key={i}>
+                  <span style={{ padding: "0 26px" }}>{item}</span>
+                  <span style={{ color: "#445" }}>·</span>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,57 +1,68 @@
-@import url("https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-sans: "IBM Plex Sans";
-  --font-display: "Clash Display";
-  --font-mono: "IBM Plex Mono";
+  --font-sans: "Schibsted Grotesk";
+  --font-display: "Schibsted Grotesk";
+  --font-mono: "Space Mono";
 
-  /* dark (default) — mirrors the design handoff :root */
-  --bg: #0b0d10;
-  --panel: #14171c;
-  --inset: #1b1f26;
+  /* dark (default) — mirrors the Claude Design handoff #app-root tokens */
+  --bg: #0a0c0e;
+  --panel: #121519;
+  --panel-2: #161a20;
+  --inset: #1b2027;
   --raise: #22272f;
   --border: rgba(255, 255, 255, 0.07);
   --border-2: rgba(255, 255, 255, 0.13);
-  --ink: #eceff2;
-  --ink-2: #9aa3ad;
-  --ink-3: #727a84;
-  --accent: #22d3ee;
-  --accent-ink: #062a30;
-  --accent-dim: rgba(34, 211, 238, 0.13);
-  --accent-line: rgba(34, 211, 238, 0.32);
-  --green: #34d399;
-  --green-dim: rgba(52, 211, 153, 0.13);
-  --amber: #fbbf24;
-  --amber-dim: rgba(251, 191, 36, 0.13);
-  --red: #f87171;
-  --red-dim: rgba(248, 113, 113, 0.13);
+  --ink: #e8eced;
+  --ink-2: #9aa3a0;
+  --ink-3: #5f6864;
+  --accent: #36f1a0;
+  --accent-ink: #04130c;
+  --accent-dim: rgba(54, 241, 160, 0.12);
+  --accent-line: rgba(54, 241, 160, 0.3);
+  --green: #36f1a0;
+  --green-dim: rgba(54, 241, 160, 0.12);
+  --amber: #f5b544;
+  --amber-dim: rgba(245, 181, 68, 0.14);
+  --red: #ff6b6b;
+  --red-dim: rgba(255, 107, 107, 0.14);
+  --cyan: #2fa8e0;
+  --cyan-dim: rgba(47, 168, 224, 0.14);
+  --violet: #6c7be0;
+  --violet-dim: rgba(108, 123, 224, 0.16);
+  --shadow: rgba(0, 0, 0, 0.45);
 }
 
 [data-theme="light"] {
-  --bg: #eef1f5;
+  --bg: #eef1f0;
   --panel: #ffffff;
-  --inset: #f4f6f9;
+  --panel-2: #f7f9f8;
+  --inset: #eef2f1;
   --raise: #ffffff;
-  --border: rgba(11, 14, 18, 0.1);
-  --border-2: rgba(11, 14, 18, 0.17);
-  --ink: #0e1318;
-  --ink-2: #515a64;
-  --ink-3: #7c858f;
-  --accent: #0e7490;
-  --accent-ink: #ecfeff;
-  --accent-dim: rgba(14, 116, 144, 0.09);
-  --accent-line: rgba(14, 116, 144, 0.3);
-  --green: #047857;
-  --green-dim: rgba(4, 120, 87, 0.1);
-  --amber: #b45309;
-  --amber-dim: rgba(180, 83, 9, 0.1);
-  --red: #dc2626;
-  --red-dim: rgba(220, 38, 38, 0.1);
+  --border: rgba(0, 0, 0, 0.09);
+  --border-2: rgba(0, 0, 0, 0.15);
+  --ink: #0d1411;
+  --ink-2: #566460;
+  --ink-3: #8b948f;
+  --accent: #10b277;
+  --accent-ink: #ffffff;
+  --accent-dim: rgba(16, 178, 119, 0.1);
+  --accent-line: rgba(16, 178, 119, 0.3);
+  --green: #10b277;
+  --green-dim: rgba(16, 178, 119, 0.1);
+  --amber: #b4791a;
+  --amber-dim: rgba(180, 121, 26, 0.12);
+  --red: #d9534f;
+  --red-dim: rgba(217, 83, 79, 0.12);
+  --cyan: #1d7fb0;
+  --cyan-dim: rgba(29, 127, 176, 0.12);
+  --violet: #5360c0;
+  --violet-dim: rgba(83, 96, 192, 0.12);
+  --shadow: rgba(0, 0, 0, 0.12);
 }
 
 * {
@@ -98,7 +109,6 @@ body {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 14px;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 28px -12px rgba(0, 0, 0, 0.6);
 }
 .mono {
   font-family: var(--font-mono), monospace;
@@ -107,9 +117,192 @@ body {
   font-family: var(--font-display), sans-serif;
 }
 .eyebrow {
+  font-family: var(--font-mono), monospace;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.6px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* copyable / linkable mono chip (hash, CID, key) */
+.stw-chip {
+  background: var(--inset);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 9px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+.stw-chip:hover {
+  border-color: var(--accent);
+}
+
+/* generic row hover used by feed/table rows */
+.stw-rowhover {
+  transition: background 0.14s ease;
+}
+.stw-rowhover:hover {
+  background: var(--inset);
+}
+
+/* sidebar nav item */
+.stw-navitem {
+  transition: background 0.14s ease, color 0.14s ease, box-shadow 0.14s ease;
+}
+.stw-navitem:hover {
+  background: var(--inset);
+  color: var(--accent);
+}
+
+/* primary accent button (topbar refresh, verify, primary CTAs) */
+.stw-btn-accent {
+  background: var(--accent);
+  color: var(--accent-ink);
+  transition: background 0.14s ease, transform 0.14s ease, box-shadow 0.14s ease;
+}
+.stw-btn-accent:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(54, 241, 160, 0.28);
+}
+.stw-btn-accent:active {
+  transform: translateY(0);
+}
+
+/* landing top-nav link */
+.stw-land-nav:hover {
+  color: #36f1a0;
+}
+
+/* sidebar: visible by default (desktop — the primary surface, no media override
+   needed); only hidden off-canvas below lg, where the drawer toggles it open. */
+.stw-sidebar {
+  transform: translateX(0);
+  transition: transform 0.28s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@media (max-width: 1023px) {
+  .stw-sidebar {
+    transform: translateX(-100%);
+  }
+  .stw-sidebar.is-open {
+    transform: translateX(0);
+  }
+}
+
+/* ghost/outline button (connect wallet, secondary) */
+.stw-btn-ghost {
+  border: 1px solid var(--border-2);
   color: var(--ink-2);
+  background: transparent;
+  transition: border-color 0.14s ease, background 0.14s ease, color 0.14s ease;
+}
+.stw-btn-ghost:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--ink);
+}
+
+/* Claude Design handoff keyframes */
+@keyframes stw-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(54, 241, 160, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(54, 241, 160, 0);
+  }
+}
+@keyframes stw-new-flash {
+  0% {
+    background: rgba(54, 241, 160, 0.16);
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  100% {
+    background: transparent;
+    box-shadow: inset 0 0 0 transparent;
+  }
+}
+@keyframes stw-drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes stw-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes stw-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes stw-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes stw-blink {
+  0%,
+  48% {
+    opacity: 1;
+  }
+  49%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes stw-ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes stw-intro-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.animate-stw-pulse {
+  animation: stw-pulse 1.8s infinite;
+}
+.animate-stw-spin {
+  animation: stw-spin 1s linear infinite;
+}
+.animate-stw-fade {
+  animation: stw-fade-up 0.28s ease both;
+}
+.animate-stw-drawer {
+  animation: stw-drawer-in 0.28s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.animate-stw-toast {
+  animation: stw-toast-in 0.3s ease;
+}
+.animate-stw-new {
+  animation: stw-new-flash 2.4s ease-out;
 }

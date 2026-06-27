@@ -21,25 +21,23 @@ export function HashChip({
   const copy = () => {
     navigator.clipboard?.writeText(value);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1400);
+    setTimeout(() => setCopied(false), 1200);
   };
   return (
     <button
       onClick={copy}
       title={title || `${value} — click to copy`}
-      className="inline-flex items-center gap-1.5 h-[26px] px-2.5 rounded-lg border bg-inset text-ink"
-      style={{ borderColor: "var(--border)", maxWidth: "100%" }}
+      className="stw-chip mono inline-flex items-center gap-1.5"
+      style={{ maxWidth: "100%" }}
     >
       {label && (
-        <span className="text-ink-3" style={{ fontSize: 10, letterSpacing: "0.3px" }}>
-          {label}
-        </span>
+        <span style={{ fontSize: 10, letterSpacing: "0.04em", color: "var(--ink-3)" }}>{label}</span>
       )}
-      <span className="mono truncate" style={{ fontSize: 12, minWidth: 0 }}>
-        {trunc(value, head, tail)}
+      <span className="truncate" style={{ fontSize: 11.5, minWidth: 0 }}>
+        {copied ? "copied ✓" : trunc(value, head, tail)}
       </span>
-      <span className="flex" style={{ opacity: 0.55, color: copied ? "var(--green)" : undefined }}>
-        {copied ? <Check size={13} /> : <Copy size={13} />}
+      <span className="flex" style={{ opacity: 0.6, color: copied ? "var(--accent)" : undefined }}>
+        {copied ? <Check size={12} /> : <Copy size={12} />}
       </span>
     </button>
   );
@@ -64,37 +62,35 @@ export function LinkChip({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1.5 h-[26px] px-2.5 rounded-lg border bg-inset text-ink"
-      style={{ borderColor: "var(--border)", maxWidth: "100%", textDecoration: "none" }}
+      className="stw-chip mono inline-flex items-center gap-1.5"
+      style={{ maxWidth: "100%", textDecoration: "none" }}
     >
       {label && (
-        <span className="text-ink-3" style={{ fontSize: 10, letterSpacing: "0.3px" }}>
-          {label}
-        </span>
+        <span style={{ fontSize: 10, letterSpacing: "0.04em", color: "var(--ink-3)" }}>{label}</span>
       )}
-      <span className="mono truncate" style={{ fontSize: 12, minWidth: 0 }}>
+      <span className="truncate" style={{ fontSize: 11.5, minWidth: 0 }}>
         {trunc(value, head, tail)}
       </span>
-      <span className="flex" style={{ opacity: 0.55 }}>
+      <span className="flex" style={{ opacity: 0.6 }}>
         <Ext size={12} />
       </span>
     </a>
   );
 }
 
-// ── Verified / Unverified status chip ────────────────────────────────────────
+// ── Verified status chip ─────────────────────────────────────────────────────
 export function VerifiedBadge({ verified = true, label }: { verified?: boolean; label?: string }) {
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full"
+      className="mono inline-flex items-center gap-1.5"
       style={{
         height: 22,
-        padding: "0 9px",
+        padding: "0 10px",
+        borderRadius: 20,
         fontSize: 11,
-        fontWeight: 600,
-        color: verified ? "var(--green)" : "var(--ink-3)",
-        background: verified ? "var(--green-dim)" : "var(--inset)",
-        border: `1px solid ${verified ? "color-mix(in srgb,var(--green) 30%,transparent)" : "var(--border)"}`,
+        color: verified ? "var(--accent)" : "var(--ink-3)",
+        background: verified ? "var(--accent-dim)" : "var(--inset)",
+        border: `1px solid ${verified ? "var(--accent-line)" : "var(--border)"}`,
       }}
     >
       {verified ? <Check size={12} /> : <X size={12} />}
@@ -107,17 +103,18 @@ export function VerifiedBadge({ verified = true, label }: { verified?: boolean; 
 export function KindPill({ kind, tint }: { kind: string; tint: string }) {
   return (
     <span
-      className="inline-flex items-center justify-center rounded-md"
+      className="mono inline-flex items-center justify-center"
       style={{
-        minWidth: 78,
         height: 22,
         padding: "0 9px",
-        fontSize: 11,
-        fontWeight: 600,
-        textTransform: "capitalize",
+        borderRadius: 5,
+        fontSize: 10.5,
+        fontWeight: 700,
+        letterSpacing: "0.05em",
+        textTransform: "uppercase",
         color: tint,
-        background: "color-mix(in srgb, currentColor 12%, transparent)",
-        border: `1px solid color-mix(in srgb, ${tint} 28%, transparent)`,
+        background: `color-mix(in srgb, ${tint} 14%, transparent)`,
+        whiteSpace: "nowrap",
       }}
     >
       {kind}
@@ -125,25 +122,50 @@ export function KindPill({ kind, tint }: { kind: string; tint: string }) {
   );
 }
 
+// ── "Sample / illustrative" honesty tag (hybrid data labelling) ──────────────
+export function SampleTag({ label = "sample", title }: { label?: string; title?: string }) {
+  return (
+    <span
+      className="mono inline-flex items-center"
+      title={title || "Illustrative — not a live on-chain value (not available on testnet)."}
+      style={{
+        height: 16,
+        padding: "0 6px",
+        borderRadius: 5,
+        fontSize: 9,
+        fontWeight: 700,
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        color: "var(--amber)",
+        background: "var(--amber-dim)",
+        border: "1px solid color-mix(in srgb, var(--amber) 28%, transparent)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
 // ── Empty / loading / error states ───────────────────────────────────────────
 export function EmptyState({ icon, title, body }: { icon?: React.ReactNode; title: string; body?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center text-center" style={{ padding: "44px 16px" }}>
+    <div className="flex flex-col items-center justify-center text-center" style={{ padding: "44px 16px", gap: 10 }}>
       <div
         className="flex items-center justify-center"
         style={{
-          width: 46,
-          height: 46,
-          borderRadius: 12,
-          background: "var(--inset)",
-          border: "1px solid var(--border)",
+          width: 44,
+          height: 44,
+          borderRadius: 11,
+          background: "transparent",
+          border: "1px dashed var(--border-2)",
           color: "var(--ink-3)",
         }}
       >
         {icon}
       </div>
-      <div style={{ marginTop: 13, fontSize: 14, color: "var(--ink-2)", fontWeight: 600 }}>{title}</div>
-      {body && <div style={{ marginTop: 5, fontSize: 12.5, color: "var(--ink-3)", maxWidth: 380 }}>{body}</div>}
+      <div style={{ fontSize: 13.5, color: "var(--ink-2)", fontWeight: 600 }}>{title}</div>
+      {body && <div style={{ fontSize: 12.5, color: "var(--ink-3)", maxWidth: 380 }}>{body}</div>}
     </div>
   );
 }
