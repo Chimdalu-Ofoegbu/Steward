@@ -59,6 +59,7 @@ def perceive(top_n: int = 10, agent_pubkey_hex: str | None = None) -> dict:
     return {
         "timestamp": int(time.time()),
         "block_height": auction.get("block_height"),
+        "auction_source": auction.get("source", "live"),
         "network": chain.NETWORK,
         "agent_public_key_hex": agent,
         "treasury": {

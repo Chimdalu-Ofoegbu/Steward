@@ -88,8 +88,21 @@ def _run(verb: str, *args: object, timeout: int = 60) -> dict:
 
 # ── Reads ────────────────────────────────────────────────────────────────────
 def get_balance(public_key_hex: str) -> int:
-    """CSPR balance in motes (1 CSPR = 1e9 motes). 0 if the account is unfunded."""
-    return int(_run("balance", public_key_hex)["motes"])
+    """CSPR balance in motes (1 CSPR = 1e9 motes). 0 if the account is unfunded.
+
+    Retries transient node flakes so a momentary hiccup doesn't abort a cycle. The
+    balance is authoritative for risk checks, so a persistent failure still raises
+    (never act on an unknown balance).
+    """
+    last: Exception | None = None
+    for i in range(3):
+        try:
+            return int(_run("balance", public_key_hex)["motes"])
+        except (ChainError, subprocess.TimeoutExpired) as exc:
+            last = exc
+            if i < 2:
+                time.sleep(0.4 * (i + 1))
+    raise ChainError(f"balance read failed after retries: {last}")
 
 
 def account_hash(public_key_hex: str) -> str:
@@ -97,12 +110,68 @@ def account_hash(public_key_hex: str) -> str:
     return _run("account-hash", public_key_hex)["account_hash_hex"]
 
 
+_MOTES_PER_CSPR = 1_000_000_000
+
+
+def _auction_from_journal(agent: str) -> dict:
+    """Degraded auction snapshot for when the live read is unavailable (the public
+    node intermittently 413s the full auction set or streams it too slowly).
+
+    Delegations are derived from the agent's OWN attested journal — counting only
+    moves that actually executed on-chain (have a staking_txn) — so they are real,
+    attested, on-chain delegations, never fabricated. Validator candidates come from
+    the known deployments set. Tagged source='journal_fallback' so the pinned
+    observed-state honestly discloses that the live auction read was unavailable.
+    """
+    by_validator: dict[str, float] = {}
+    try:
+        rows = json.loads((_REPO / "deployments" / "journal_feed.json").read_text(encoding="utf-8"))
+        rows.sort(key=lambda e: (e.get("epoch") or 0, e.get("timestamp") or 0))
+        for e in rows:
+            v, txn = e.get("validator"), e.get("staking_txn")
+            if not v or not txn:
+                continue  # only moves that executed on-chain
+            amt = float(e.get("amount_cspr") or 0)
+            by_validator[v] = by_validator.get(v, 0.0) + (-amt if e.get("action") == "undelegate" else amt)
+    except (OSError, json.JSONDecodeError):
+        pass
+
+    delegations = [
+        {"validator": v, "amount_motes": str(int(round(a * _MOTES_PER_CSPR)))}
+        for v, a in by_validator.items()
+        if a > 1e-4
+    ]
+    validators = [
+        {"public_key": v.get("public_key_hex"), "weight": "0"}
+        for v in _deployments().get("validators", [])
+        if v.get("public_key_hex")
+    ]
+    return {
+        "validators": validators,
+        "delegations": delegations,
+        "validator_count": len(validators),
+        "block_height": None,
+        "source": "journal_fallback",
+    }
+
+
 def get_auction(agent_pubkey_hex: str | None = None) -> dict:
     """Native auction snapshot: top validators by weight + (optionally) the agent's
     delegations. Returns {validators: [{public_key, weight}], delegations: [...],
-    validator_count, block_height}."""
+    validator_count, block_height, source}.
+
+    Prefers the LIVE read but degrades to the agent's attested journal delegations
+    when the node 413s / times out, so perceive never crashes mid-cycle. `source`
+    is 'live' on a successful read, 'journal_fallback' otherwise.
+    """
     agent = agent_pubkey_hex or agent_public_key_hex()
-    return _run("auction-info", agent, timeout=90)
+    try:
+        live = _run("auction-info", agent, timeout=15)
+        live.setdefault("source", "live")
+        return live
+    except (ChainError, subprocess.TimeoutExpired):
+        # Live auction read unavailable — degrade gracefully instead of crashing the cycle.
+        return _auction_from_journal(agent)
 
 
 # ── Writes (sign with AGENT_SECRET_KEY_PATH) ─────────────────────────────────
