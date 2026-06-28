@@ -3,6 +3,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useFetch } from "@/lib/useFetch";
 import { ScrambleText } from "@/components/ScrambleText";
+import { Logo } from "@/components/Logo";
 import type { TreasuryData, JournalEntry } from "@/lib/types";
 
 const NAV = [
@@ -109,8 +110,7 @@ export default function Landing() {
         {/* top bar */}
         <div className="flex items-center justify-between" style={{ padding: "26px clamp(20px,4vw,56px)", borderBottom: "1px solid rgba(255,255,255,.07)" }}>
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center" style={{ width: 24, height: 24, border: "1.5px solid #36F1A0", borderRadius: 6, fontFamily: "'Space Mono',monospace", fontSize: 13, color: "#36F1A0", fontWeight: 700 }}>S</div>
-            <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 16, letterSpacing: "0.24em", fontWeight: 700 }}>STEWARD</span>
+            <Logo height={22} style={{ color: "#E8ECEA" }} />
           </div>
           <div className="hidden md:flex" style={{ gap: 32, fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8b94a0" }}>
             {NAV.map((n) => (

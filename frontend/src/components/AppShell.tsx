@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "./ThemeProvider";
 import { ScrambleText } from "./ScrambleText";
 import { navGlyph, X, Sun, Moon } from "./icons";
+import { Logo } from "./Logo";
 import { agoLabel } from "@/lib/format";
 
 const NAV = [
@@ -141,13 +142,7 @@ function Sidebar({
     <>
       <div className="flex items-center justify-between" style={{ padding: "22px 22px 18px" }}>
         <Link href="/" className="flex items-center gap-2.5" style={{ textDecoration: "none", color: "var(--ink)" }}>
-          <div
-            className="mono flex items-center justify-center"
-            style={{ width: 24, height: 24, border: "1.5px solid var(--accent)", borderRadius: 6, fontSize: 13, color: "var(--accent)", fontWeight: 700 }}
-          >
-            S
-          </div>
-          <span className="mono" style={{ fontSize: 15, letterSpacing: "0.22em", fontWeight: 700 }}>STEWARD</span>
+          <Logo height={20} />
         </Link>
         <button onClick={onClose} aria-label="Close navigation" className="lg:hidden flex items-center justify-center" style={{ width: 28, height: 28, color: "var(--ink-2)" }}>
           {drawer ? <X size={16} /> : null}
