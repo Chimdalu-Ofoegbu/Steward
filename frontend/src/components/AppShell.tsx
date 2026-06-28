@@ -167,9 +167,6 @@ function Sidebar({
                 padding: "10px 12px",
                 borderRadius: 9,
                 textDecoration: "none",
-                color: active ? "var(--accent)" : "var(--ink-2)",
-                background: active ? "var(--inset)" : "transparent",
-                boxShadow: active ? "inset 2px 0 0 var(--accent)" : undefined,
               }}
             >
               <span style={{ width: 16, textAlign: "center", fontSize: 13, opacity: 0.9 }}>{navGlyph[n.view]}</span>
@@ -197,12 +194,25 @@ function Sidebar({
             {theme === "dark" ? <Moon size={15} /> : <Sun size={15} />}
           </button>
           <div
-            className="stw-btn-ghost mono flex items-center gap-2"
-            title="Read-only demo — no wallet needed to verify"
-            style={{ flex: 1, minWidth: 0, height: 38, padding: "0 11px", borderRadius: 9, fontSize: 11, cursor: "pointer" }}
+            className="mono flex items-center gap-2"
+            title="This dashboard is read-only — no wallet, keys, or spend authority in the browser. Steward acts autonomously on-chain; here you only read and verify."
+            aria-label="View-only — no wallet connection"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              height: 38,
+              padding: "0 11px",
+              borderRadius: 9,
+              fontSize: 11,
+              letterSpacing: "0.04em",
+              border: "1px solid var(--border)",
+              background: "var(--inset)",
+              color: "var(--ink-2)",
+              cursor: "default",
+            }}
           >
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ink-3)", flex: "none" }} />
-            <span className="truncate">Connect Wallet</span>
+            <span className="truncate">View-only · no wallet</span>
           </div>
         </div>
       </div>

@@ -114,7 +114,7 @@ export default function Landing() {
           </div>
           <div className="hidden md:flex" style={{ gap: 32, fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8b94a0" }}>
             {NAV.map((n) => (
-              <Link key={n.href} href={n.href} style={{ textDecoration: "none", color: "inherit" }} className="stw-land-nav">
+              <Link key={n.href} href={n.href} style={{ textDecoration: "none" }} className="stw-land-nav">
                 <ScrambleText text={n.label} />
               </Link>
             ))}

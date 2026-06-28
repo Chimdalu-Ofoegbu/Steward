@@ -147,13 +147,20 @@ body {
   background: var(--inset);
 }
 
-/* sidebar nav item */
+/* sidebar nav item — base/active in CSS so :hover wins (inline color would shadow it) */
 .stw-navitem {
+  color: var(--ink-2);
+  background: transparent;
   transition: background 0.14s ease, color 0.14s ease, box-shadow 0.14s ease;
 }
 .stw-navitem:hover {
   background: var(--inset);
   color: var(--accent);
+}
+.stw-navitem[aria-current="page"] {
+  color: var(--accent);
+  background: var(--inset);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 /* primary accent button (topbar refresh, verify, primary CTAs) */
@@ -171,7 +178,11 @@ body {
   transform: translateY(0);
 }
 
-/* landing top-nav link */
+/* landing top-nav link — base color in CSS so :hover wins (inline color would shadow it) */
+.stw-land-nav {
+  color: inherit;
+  transition: color 0.14s ease;
+}
 .stw-land-nav:hover {
   color: #36f1a0;
 }
