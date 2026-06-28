@@ -27,6 +27,33 @@ function rpc() {
   return new RpcClient(new HttpHandler(CONFIG.rpc));
 }
 
+/** Reject if `p` doesn't settle within `ms`. Caps a slow/huge read so the route can fall back fast. */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`rpc timeout after ${ms}ms`)), ms)),
+  ]);
+}
+
+/** Retry transient RPC flakes (the public testnet node is intermittently unavailable / slow). */
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3, baseMs = 300): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, baseMs * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
+// Last good liquid-balance read (CSPR). On a transient node failure we serve this real,
+// recently-observed value instead of a misleading 0 — it's a true prior on-chain read,
+// never a fabricated number. Refreshed on every successful read.
+let lastGoodLiquidCspr: number | null = null;
+
 export function motesToCspr(motes: bigint | string | number): number {
   const m = typeof motes === "bigint" ? motes : BigInt(String(motes ?? "0"));
   // Keep 6 dp of precision without floating BigInt division.
@@ -39,11 +66,15 @@ export function motesToCspr(motes: bigint | string | number): number {
 export async function liquidBalanceCspr(agentHex: string): Promise<number> {
   const pub = PublicKey.fromHex(agentHex);
   try {
-    const res = await rpc().queryLatestBalance(PurseIdentifier.fromPublicKey(pub));
-    return motesToCspr(BigInt(String(res.balance ?? "0")));
+    // Retry transient flakes (each shot capped) so a momentary node hiccup doesn't read as 0.
+    const res = await withRetry(() => withTimeout(rpc().queryLatestBalance(PurseIdentifier.fromPublicKey(pub)), 3500));
+    const cspr = motesToCspr(BigInt(String(res.balance ?? "0")));
+    lastGoodLiquidCspr = cspr; // authoritative live read — remember it
+    return cspr;
   } catch {
-    // An unfunded account's main purse may not exist yet — report 0.
-    return 0;
+    // Node flaked. Prefer the last real balance we saw over a misleading 0; only fall back
+    // to 0 if we've never had a successful read (genuinely unknown / unfunded purse).
+    return lastGoodLiquidCspr ?? 0;
   }
 }
 
@@ -61,7 +92,10 @@ interface AuctionRead {
  * auction_state (same logic as the sidecar `auction-info` verb).
  */
 export async function auctionInfo(agentHex: string): Promise<AuctionRead> {
-  const res: any = await rpc().getLatestAuctionInfo();
+  // Cap this read: the full auction set is huge — the public node either 413s (fast reject)
+  // or can take ~15s to stream. Either way, time out at 4s so the route falls back to the
+  // agent's attested journal delegations without hanging the dashboard.
+  const res: any = await withTimeout(rpc().getLatestAuctionInfo(), 4000);
   const raw = res?.rawJSON ?? res?.raw_json ?? res ?? {};
   const state = raw.auction_state ?? raw.auctionState ?? raw.AuctionState ?? {};
   const eraValidators = Array.isArray(state.era_validators)
