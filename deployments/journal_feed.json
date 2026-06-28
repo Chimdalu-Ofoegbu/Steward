@@ -24,5 +24,18 @@
     "decision_hash": "d8469bf8e3834cc67de5b3595b05ff3421d479ebb718cd7061170ffb2c7fabdf",
     "attestation_txn": "cdc4c7f2f2aa114c949cdec8cacd9d9704da4f0731ebac7450ee1d78387fb1bf",
     "staking_txn": "992fa9f63e5c5378483ac17929e068e0d38d5c2172ef7f98dbc9ac266f1b12ea"
+  },
+  {
+    "epoch": 4,
+    "timestamp": 1782608335,
+    "action": "hold",
+    "amount_cspr": 0.0,
+    "validator": null,
+    "confidence": 0.78,
+    "rationale": "The snapshot shows only one validator in the active set (0106ca7c...), which is also the sole validator the treasury is already staked to (1,700 CSPR), and its reported active weight is 0.0 — an anomalous/zero-weight signal. With ~2,608 CSPR liquid, total treasury is ~4,308 CSPR; the existing 1,700 stake is already ~39.5% of total, essentially at the 40% per-validator cap, so I cannot safely add more there. The diversification floor requires ≥3 validators once meaningfully staked, but there are no alternative active validators available in this snapshot to delegate fresh stake to. Delegating more to the only (zero-weight, capped) validator would breach both the 40% cap and prudence. The correct, prudent action is to hold this cycle, preserve liquid capital plus gas buffer, and wait for a healthier multi-validator set to diversify into.",
+    "cid": "bafkreietudhymeei7ntgztzlm5zh7szyuqixbt2rinqtlfusmp2krcigpa",
+    "decision_hash": "93a0cf861088fb666ccf2b67727fcb38a41170cf51436135969263f4a8890678",
+    "attestation_txn": "dd0317586cf054f8075299acb8884d27360dc4c9243293b775115d955a750eb1",
+    "staking_txn": null
   }
 ]
