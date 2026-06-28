@@ -1,22 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "node:fs";
 import { createHash } from "node:crypto";
-import path from "node:path";
 import { CONFIG } from "@/lib/config";
 import { getJournalTransaction } from "@/lib/casper";
-import type { JournalEntry, VerifyResult, VerifyStep } from "@/lib/types";
+import { loadJournalFeed } from "@/lib/feed";
+import type { VerifyResult, VerifyStep } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-async function loadFeed(): Promise<JournalEntry[]> {
-  try {
-    const p = path.resolve(process.cwd(), "..", "deployments", "journal_feed.json");
-    return JSON.parse(await fs.readFile(p, "utf-8")) as JournalEntry[];
-  } catch {
-    return [];
-  }
-}
+const loadFeed = loadJournalFeed;
 
 /**
  * Verify an attestation: integrity (sha256 of the RAW pinned bytes == on-chain

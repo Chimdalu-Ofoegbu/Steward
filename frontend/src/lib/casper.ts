@@ -67,7 +67,7 @@ export async function liquidBalanceCspr(agentHex: string): Promise<number> {
   const pub = PublicKey.fromHex(agentHex);
   try {
     // Retry transient flakes (each shot capped) so a momentary node hiccup doesn't read as 0.
-    const res = await withRetry(() => withTimeout(rpc().queryLatestBalance(PurseIdentifier.fromPublicKey(pub)), 3500));
+    const res: any = await withRetry(() => withTimeout(rpc().queryLatestBalance(PurseIdentifier.fromPublicKey(pub)), 3500));
     const cspr = motesToCspr(BigInt(String(res.balance ?? "0")));
     lastGoodLiquidCspr = cspr; // authoritative live read — remember it
     return cspr;
