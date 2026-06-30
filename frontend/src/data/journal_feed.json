@@ -19,7 +19,7 @@
     "amount_cspr": 1700.0,
     "validator": "0106ca7c39cd272dbf21a86eeb3b36b7c26e2e9b94af64292419f7862936bca2ca",
     "confidence": 0.8,
-    "rationale": "Treasury holds 4,312.77 CSPR fully idle with zero delegations — no yield is being earned. To begin productively staking while respecting the 40% single-validator cap (~1,725 CSPR), I delegate 1,700 CSPR to the highest-weight active validator (44.6M CSPR). Well under the 10k per-cycle limit, leaving a ~2,600 CSPR liquid buffer for gas and for subsequent cycles where 2-3 more validators are added to satisfy the diversification floor.",
+    "rationale": "Treasury holds 4,312.77 CSPR fully idle with zero delegations — no yield is being earned. To begin productively staking while respecting the 40% single-validator cap (~1,725 CSPR), I delegate 1,700 CSPR to the highest-weight active validator (44.6M CSPR). Well under the 10k per-cycle limit, leaving a ~2,600 CSPR liquid buffer for gas and for subsequent cycles where 2–3 more validators are added to satisfy the diversification floor.",
     "cid": "bafkreigyi2n7ry4djtdh3zntlfnql7zuehkht25xddgxayixb75sy75l34",
     "decision_hash": "d8469bf8e3834cc67de5b3595b05ff3421d479ebb718cd7061170ffb2c7fabdf",
     "attestation_txn": "cdc4c7f2f2aa114c949cdec8cacd9d9704da4f0731ebac7450ee1d78387fb1bf",
@@ -32,10 +32,23 @@
     "amount_cspr": 0.0,
     "validator": null,
     "confidence": 0.78,
-    "rationale": "The snapshot shows only one validator in the active set (0106ca7c...), which is also the sole validator the treasury is already staked to (1,700 CSPR), and its reported active weight is 0.0 - an anomalous/zero-weight signal. With ~2,608 CSPR liquid, total treasury is ~4,308 CSPR; the existing 1,700 stake is already ~39.5% of total, essentially at the 40% per-validator cap, so I cannot safely add more there. The diversification floor requires >=3 validators once meaningfully staked, but there are no alternative active validators available in this snapshot to delegate fresh stake to. Delegating more to the only (zero-weight, capped) validator would breach both the 40% cap and prudence. The correct, prudent action is to hold this cycle, preserve liquid capital plus gas buffer, and wait for a healthier multi-validator set to diversify into.",
+    "rationale": "The snapshot shows only one validator in the active set (0106ca7c...), which is also the sole validator the treasury is already staked to (1,700 CSPR), and its reported active weight is 0.0 — an anomalous/zero-weight signal. With ~2,608 CSPR liquid, total treasury is ~4,308 CSPR; the existing 1,700 stake is already ~39.5% of total, essentially at the 40% per-validator cap, so I cannot safely add more there. The diversification floor requires ≥3 validators once meaningfully staked, but there are no alternative active validators available in this snapshot to delegate fresh stake to. Delegating more to the only (zero-weight, capped) validator would breach both the 40% cap and prudence. The correct, prudent action is to hold this cycle, preserve liquid capital plus gas buffer, and wait for a healthier multi-validator set to diversify into.",
     "cid": "bafkreietudhymeei7ntgztzlm5zh7szyuqixbt2rinqtlfusmp2krcigpa",
     "decision_hash": "93a0cf861088fb666ccf2b67727fcb38a41170cf51436135969263f4a8890678",
     "attestation_txn": "dd0317586cf054f8075299acb8884d27360dc4c9243293b775115d955a750eb1",
     "staking_txn": null
+  },
+  {
+    "epoch": 5,
+    "timestamp": 1782786014,
+    "action": "delegate",
+    "amount_cspr": 1720.0,
+    "validator": "017d96b9a63abcb61c870a4f55187a0a7ac24096bdb5fc585c12a686a4d892009e",
+    "confidence": 0.78,
+    "rationale": "Treasury totals ~4,307 CSPR (1,701 staked + 2,606 liquid). Currently all stake sits with a single validator (0106ca...), which both fails the ≥3-validator diversification floor and concentrates risk. I delegate 1,720 CSPR — the largest active liquid balance and ~40% of total treasury — to the second-highest-weight active validator (017d96b9...), where the treasury holds zero stake, improving diversification. This stays within the 40% single-validator cap (1,720/4,307 ≈ 40%), the 10k per-move limit, and leaves ~886 CSPR liquid plus a healthy gas buffer. A second cycle can then add a third validator to satisfy the diversification floor.",
+    "cid": "bafkreihvl4xbkq46qskts6jcowfrptp4nrebcxnmppyn3fwn35gjy5cnwe",
+    "decision_hash": "f55f2e15439e8495397922758b17cdfc6c48115dac7bf0dd96cddf4c9c744db1",
+    "attestation_txn": "4ebe2680a7c65d2f2332564c5d3545a3c2f9ab178eb3e131ef2e01147e445d04",
+    "staking_txn": "b5e0a14a3512ee14beae48ff4dc6a82ccc58416cf588be21122478f04de83745"
   }
 ]

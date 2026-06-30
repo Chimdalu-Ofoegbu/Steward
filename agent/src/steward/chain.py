@@ -113,6 +113,34 @@ def account_hash(public_key_hex: str) -> str:
 _MOTES_PER_CSPR = 1_000_000_000
 
 
+def _candidate_validators() -> list:
+    """Real, active testnet validators (with live weights) the agent can diversify into
+    when the local auction read is unavailable (the public node 413s the full set).
+    Sourced from the live auction and pinned to `deployments/validators_testnet.json`;
+    falls back to the known deployments validator set (no weights) if that file is absent.
+    These are genuine on-chain validators — a real opportunity set, not fabricated data.
+    """
+    try:
+        rows = json.loads((_REPO / "deployments" / "validators_testnet.json").read_text(encoding="utf-8"))
+        out = [
+            {
+                "public_key": r["public_key_hex"],
+                "weight": str(int(round(float(r.get("weight_cspr", 0)) * _MOTES_PER_CSPR))),
+            }
+            for r in rows
+            if r.get("public_key_hex")
+        ]
+        if out:
+            return out
+    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError):
+        pass
+    return [
+        {"public_key": v.get("public_key_hex"), "weight": "0"}
+        for v in _deployments().get("validators", [])
+        if v.get("public_key_hex")
+    ]
+
+
 def _auction_from_journal(agent: str) -> dict:
     """Degraded auction snapshot for when the live read is unavailable (the public
     node intermittently 413s the full auction set or streams it too slowly).
@@ -141,11 +169,7 @@ def _auction_from_journal(agent: str) -> dict:
         for v, a in by_validator.items()
         if a > 1e-4
     ]
-    validators = [
-        {"public_key": v.get("public_key_hex"), "weight": "0"}
-        for v in _deployments().get("validators", [])
-        if v.get("public_key_hex")
-    ]
+    validators = _candidate_validators()
     return {
         "validators": validators,
         "delegations": delegations,

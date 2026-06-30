@@ -1,0 +1,10 @@
+[
+  { "public_key_hex": "0106ca7c39cd272dbf21a86eeb3b36b7c26e2e9b94af64292419f7862936bca2ca", "weight_cspr": 44615740 },
+  { "public_key_hex": "017d96b9a63abcb61c870a4f55187a0a7ac24096bdb5fc585c12a686a4d892009e", "weight_cspr": 38482577 },
+  { "public_key_hex": "012d58e05b2057a84115709e0a6ccf000c6a83b4e8dfa389a680c1ab001864f1f2", "weight_cspr": 31299836 },
+  { "public_key_hex": "0147ce053a742c2a01d54d662a10e57ca0251e21d6636eeacfa4ffc24286f56134", "weight_cspr": 31297272 },
+  { "public_key_hex": "01a1622449516de81a6becfb92eb1eb6b5639ac1a1732cd87c80b7eeab8e2748ba", "weight_cspr": 10522426 },
+  { "public_key_hex": "011fc2bfc42e43605e89801221e0f3e9d4aa5c8d5bde8fd2da5797064dc1cd5cce", "weight_cspr": 10493868 },
+  { "public_key_hex": "01cc31ee413ca63bfca9ceb319edc8e91d0ff78ba80a9e7788a95b5ef27d42e92b", "weight_cspr": 10435409 },
+  { "public_key_hex": "014878b5b733f517e61633574e59983b1c0d28ddb4e52edfb8484a1e76ed539601", "weight_cspr": 10427485 }
+]
