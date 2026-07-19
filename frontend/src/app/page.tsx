@@ -97,7 +97,7 @@ export default function Landing() {
     <>VALIDATORS <b style={{ color: "#fff" }}>{t ? t.delegation_count : "…"}</b></>,
     <>DECISIONS ATTESTED <b style={{ color: "#fff" }}>{decisions ?? "…"}</b></>,
     <>NETWORK <b style={{ color: "#fff" }}>casper-test</b></>,
-    <>STATUS <b style={{ color: "#36F1A0" }}>AGENT LIVE</b></>,
+    <>STATUS <b style={{ color: "#36F1A0" }}>LIVE ON TESTNET</b></>,
   ];
 
   return (
@@ -134,7 +134,7 @@ export default function Landing() {
           </div>
           <div className="flex flex-wrap" style={{ gap: 14, marginTop: 8, animation: "stw-intro-up .8s cubic-bezier(.2,.7,.2,1) both", animationDelay: ".4s" }}>
             <Link href="/dashboard" className="stw-btn-accent flex items-center gap-2.5" style={{ padding: "16px 26px", borderRadius: 9, fontFamily: "'Space Mono',monospace", fontSize: 14, fontWeight: 700, letterSpacing: "0.03em", textDecoration: "none" }}>Enter the terminal →</Link>
-            <a href="#" className="flex items-center gap-2.5" style={{ border: "1px solid rgba(255,255,255,.16)", color: "#E8ECEA", padding: "16px 26px", borderRadius: 9, fontFamily: "'Space Mono',monospace", fontSize: 14, letterSpacing: "0.03em", textDecoration: "none" }}>▶ Watch demo</a>
+            <Link href="/verifier" className="flex items-center gap-2.5" style={{ border: "1px solid rgba(255,255,255,.16)", color: "#E8ECEA", padding: "16px 26px", borderRadius: 9, fontFamily: "'Space Mono',monospace", fontSize: 14, letterSpacing: "0.03em", textDecoration: "none" }}>▶ See it live</Link>
           </div>
         </div>
 

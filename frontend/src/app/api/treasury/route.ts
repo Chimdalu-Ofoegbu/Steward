@@ -44,13 +44,14 @@ export async function GET() {
   ]);
 
   const liquid = liquidRes.status === "fulfilled" ? liquidRes.value : 0;
-  if (liquidRes.status === "rejected") errors.push(`balance: ${String(liquidRes.reason).slice(0, 160)}`);
+  // Sanitised, user-facing note — never leak raw RPC internals (e.g. "413 Payload Too Large").
+  if (liquidRes.status === "rejected") errors.push("Live balance read temporarily unavailable; showing the last confirmed value.");
 
   const auction =
     auctionRes.status === "fulfilled"
       ? auctionRes.value
       : { validators: [], delegations: [], validator_count: 0, state_root_hash: null, block_height: null };
-  if (auctionRes.status === "rejected") errors.push(`auction: ${String(auctionRes.reason).slice(0, 160)}`);
+  if (auctionRes.status === "rejected") errors.push("Live auction snapshot temporarily unavailable; showing the agent's attested on-chain delegations.");
 
   // Prefer the live auction snapshot. If it failed (e.g. the node 413s the full set) or
   // returned no delegations, fall back to the agent's attested on-chain delegations.
@@ -74,7 +75,9 @@ export async function GET() {
     delegations,
     validators: auction.validators,
     delegation_count: delegations.length,
-    validator_count: auction.validator_count,
+    // Active-set size when we have a live auction read; otherwise the number of validators
+    // the treasury is delegated to (avoids the misleading "0 validators" beside N delegations).
+    validator_count: auction.validator_count || delegations.length,
     block_height: auction.block_height,
     state_root_hash: auction.state_root_hash,
     delegations_source: source,

@@ -9,7 +9,9 @@ import { validatorName } from "@/lib/validators";
 
 const explorer = PUBLIC_CONFIG.explorer;
 
-// Mandate limits enforced in agent/src/steward/risk.py (real, code-enforced).
+// Mandate limits from agent/src/steward/risk.py. The 40% cap and per-cycle cap are
+// enforced deterministically in code; the 3-validator floor is a target the agent builds
+// toward over cycles (not hard-enforced) — reflected honestly in the checks below.
 const MANDATE = { maxPerValidatorPct: 40, minValidators: 3, maxSingleMoveCspr: 10000 };
 
 export function DecisionDrawer({ entry, onClose }: { entry: JournalEntry; onClose: () => void }) {
@@ -44,21 +46,35 @@ export function DecisionDrawer({ entry, onClose }: { entry: JournalEntry; onClos
   };
 
   const obs = payload?.observed_state ?? {};
+  // Map the real perceive() snapshot shape: treasury.balance_cspr + current_delegations[].
+  const liquidCspr = obs?.treasury?.balance_cspr;
+  const delegatedCspr = Array.isArray(obs?.current_delegations)
+    ? obs.current_delegations.reduce((s: number, d: any) => s + (Number(d?.amount_cspr) || 0), 0)
+    : null;
+  const delegCount =
+    obs.delegation_count ?? (Array.isArray(obs?.current_delegations) ? obs.current_delegations.length : null);
   const observedList: { k: string; v: string }[] = [];
-  if (obs.liquid_cspr != null) observedList.push({ k: "Liquid balance", v: `${nfCspr(obs.liquid_cspr, 0)} CSPR` });
-  if (obs.delegated_cspr != null) observedList.push({ k: "Delegated", v: `${nfCspr(obs.delegated_cspr, 0)} CSPR` });
-  if (obs.delegation_count != null) observedList.push({ k: "Active delegations", v: String(obs.delegation_count) });
+  if (liquidCspr != null) observedList.push({ k: "Liquid balance", v: `${nfCspr(liquidCspr, 0)} CSPR` });
+  if (delegatedCspr != null) observedList.push({ k: "Delegated", v: `${nfCspr(delegatedCspr, 0)} CSPR` });
+  if (delegCount != null) observedList.push({ k: "Active delegations", v: String(delegCount) });
   if (obs.block_height) observedList.push({ k: "Observed at block", v: String(obs.block_height) });
   if (Array.isArray(obs.top_validators) && obs.top_validators[0]?.weight_cspr != null)
     observedList.push({ k: "Top validator weight", v: `${nfCspr(obs.top_validators[0].weight_cspr, 0)} CSPR` });
 
+  const moveCspr = entry.executed_cspr ?? entry.amount_cspr;
   const riskList = [
-    { label: `Max ${MANDATE.maxPerValidatorPct}% to one validator`, detail: "enforced in code" },
+    { label: `Max ${MANDATE.maxPerValidatorPct}% to one validator`, detail: "enforced in code", met: true },
     {
-      label: `Min ${MANDATE.minValidators} validators (once staked)`,
-      detail: obs.delegation_count != null ? `${obs.delegation_count} active` : "building",
+      label: `Min ${MANDATE.minValidators} validators`,
+      detail:
+        delegCount != null
+          ? delegCount >= MANDATE.minValidators
+            ? `${delegCount} active`
+            : `${delegCount} · building`
+          : "mandate target",
+      met: delegCount != null ? delegCount >= MANDATE.minValidators : false,
     },
-    { label: `Max ${nfCspr(MANDATE.maxSingleMoveCspr, 0)} CSPR / cycle`, detail: `${nfCspr(entry.amount_cspr, 0)} this move` },
+    { label: `Max ${nfCspr(MANDATE.maxSingleMoveCspr, 0)} CSPR / cycle`, detail: `${nfCspr(moveCspr, 0)} this move`, met: true },
   ];
 
   return (
@@ -132,7 +148,7 @@ export function DecisionDrawer({ entry, onClose }: { entry: JournalEntry; onClos
           <div className="flex flex-col" style={{ gap: 8 }}>
             {riskList.map((r, i) => (
               <div key={i} className="flex items-center gap-2.5" style={{ fontSize: 12.5 }}>
-                <span style={{ color: "var(--accent)" }}>✓</span>
+                <span style={{ color: r.met ? "var(--accent)" : "var(--ink-3)" }}>{r.met ? "✓" : "◦"}</span>
                 <span style={{ flex: 1, color: "var(--ink)" }}>{r.label}</span>
                 <span className="mono" style={{ fontSize: 11, color: "var(--ink-2)" }}>{r.detail}</span>
               </div>
@@ -195,6 +211,11 @@ export function DecisionDrawer({ entry, onClose }: { entry: JournalEntry; onClos
                   <span style={{ fontSize: 15, color: "var(--accent)" }}>✓</span>
                   <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>MATCH — integrity + provenance verified</span>
                 </div>
+              ) : verify.integrity_only ? (
+                <div className="flex items-start gap-2.5" style={{ marginTop: 13, background: "var(--amber-dim)", border: "1px solid color-mix(in srgb, var(--amber) 32%, transparent)", borderRadius: 9, padding: "11px 13px" }}>
+                  <span style={{ fontSize: 15, color: "var(--amber)" }}>!</span>
+                  <span className="mono" style={{ fontSize: 11.5, fontWeight: 700, color: "var(--amber)", lineHeight: 1.4 }}>INTEGRITY OK — on-chain confirmation momentarily unavailable. Retry to confirm against the chain.</span>
+                </div>
               ) : (
                 verify.error && (
                   <div style={{ marginTop: 13, fontSize: 12, color: "var(--red)" }}>{verify.error}</div>
@@ -225,9 +246,10 @@ function FactCol({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function StepIcon({ status }: { status: "ok" | "fail" | "pending" }) {
+function StepIcon({ status }: { status: "ok" | "warn" | "fail" | "pending" }) {
   const map = {
     ok: { ch: "✓", color: "var(--accent-ink)", ring: "var(--accent)", bg: "var(--accent)" },
+    warn: { ch: "!", color: "#0b0d0c", ring: "var(--amber)", bg: "var(--amber)" },
     fail: { ch: "✕", color: "#fff", ring: "var(--red)", bg: "var(--red)" },
     pending: { ch: "○", color: "var(--ink-3)", ring: "var(--border-2)", bg: "transparent" },
   }[status];
@@ -242,8 +264,14 @@ function StepIcon({ status }: { status: "ok" | "fail" | "pending" }) {
 }
 
 export function summarize(e: JournalEntry): string {
-  const amt = nfCspr(e.amount_cspr, 0);
   const v = e.validator ? validatorName(e.validator) : "";
+  if (e.action === "hold") return "Held position — no action this cycle";
+  // Only claim an executed on-chain move when a staking txn actually landed; otherwise this
+  // was an attestation of a proposal that moved no funds this cycle (honest by construction).
+  if (!e.staking_txn) {
+    return `Attested a proposed ${e.action} of ${nfCspr(e.amount_cspr, 0)} CSPR — no on-chain move this cycle`;
+  }
+  const amt = nfCspr(e.executed_cspr ?? e.amount_cspr, 0);
   switch (e.action) {
     case "delegate":
       return `Delegated ${amt} CSPR to ${v}`;

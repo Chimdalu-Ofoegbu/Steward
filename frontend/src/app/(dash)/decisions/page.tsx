@@ -104,7 +104,7 @@ export default function DecisionsPage() {
                     </span>
                     <span className="mono" style={{ fontSize: 11, color: "var(--ink-2)", flex: "none" }}>{pct}%</span>
                   </span>
-                  <span style={{ textAlign: "right" }} className="flex justify-end"><VerifiedBadge verified /></span>
+                  <span style={{ textAlign: "right" }} className="flex justify-end"><VerifiedBadge verified label="Attested" /></span>
                 </button>
                 {/* mobile card */}
                 <button
@@ -115,7 +115,7 @@ export default function DecisionsPage() {
                   <div className="flex items-center gap-2">
                     <KindPill kind={r.action} tint={kindTint(r.action)} />
                     <span className="mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>{relTime(r.timestamp)} · ep {r.epoch}</span>
-                    <span style={{ marginLeft: "auto" }}><VerifiedBadge verified /></span>
+                    <span style={{ marginLeft: "auto" }}><VerifiedBadge verified label="Attested" /></span>
                   </div>
                   <span style={{ fontSize: 13.5, color: "var(--ink)", lineHeight: 1.4 }}>{summarize(r)}</span>
                   <span className="mono truncate" style={{ fontSize: 11, color: "var(--ink-3)" }}>{trunc(r.decision_hash, 12, 10)}</span>

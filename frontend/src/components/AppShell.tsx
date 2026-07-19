@@ -175,8 +175,8 @@ function Sidebar({
         <div className="flex items-center gap-2.5" style={{ background: "var(--inset)", border: "1px solid var(--border)", borderRadius: 9, padding: "10px 12px" }}>
           <span className="animate-stw-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", flex: "none" }} />
           <div style={{ minWidth: 0 }}>
-            <div className="mono" style={{ fontSize: 11, letterSpacing: "0.1em", color: "var(--accent)" }}>AGENT LIVE</div>
-            <div style={{ fontSize: 11, color: "var(--ink-2)" }}>Autonomous · read-only</div>
+            <div className="mono" style={{ fontSize: 11, letterSpacing: "0.1em", color: "var(--accent)" }}>LIVE ON TESTNET</div>
+            <div style={{ fontSize: 11, color: "var(--ink-2)" }}>Attests on-chain · read-only</div>
           </div>
         </div>
         <div className="flex items-center gap-2">

@@ -62,14 +62,9 @@ export default function DashboardPage() {
         />
         <KpiCard label="DECISIONS ATTESTED" value={journal.data ? nfInt(entries.length) : "—"} sub="on-chain journal" />
         <KpiCard
-          label="AGENT STATUS"
-          value={
-            <span className="flex items-center gap-2">
-              <span className="animate-stw-pulse" style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--accent)" }} />
-              <span style={{ color: "var(--accent)" }}>LIVE</span>
-            </span>
-          }
-          sub="runs autonomously"
+          label="LAST CYCLE"
+          value={latest ? relTime(latest.timestamp) : journal.loading ? "…" : "—"}
+          sub={latest ? `epoch ${latest.epoch} · attested on-chain` : "no cycles yet"}
         />
       </div>
 
@@ -78,7 +73,7 @@ export default function DashboardPage() {
         <div style={{ ...card, padding: 24, minWidth: 0 }}>
           <div className="flex items-center justify-between" style={{ marginBottom: 14 }}>
             <span className="eyebrow">Latest decision</span>
-            {latest && <VerifiedBadge verified />}
+            {latest && <VerifiedBadge verified label="Attested" />}
           </div>
           {latest ? (
             <>

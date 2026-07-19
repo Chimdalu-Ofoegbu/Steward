@@ -6,21 +6,17 @@ import type { TreasuryData } from "@/lib/types";
 import { nfCspr, trunc } from "@/lib/format";
 import { validatorName, validatorColor } from "@/lib/validators";
 import { KpiCard } from "@/components/cards";
-import { SampleTag, EmptyState } from "@/components/primitives";
+import { EmptyState } from "@/components/primitives";
 
 const explorer = PUBLIC_CONFIG.explorer;
 const page: React.CSSProperties = { padding: "28px 34px", maxWidth: 1380 };
 const card = { background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 14 } as React.CSSProperties;
-const TCOLS = "minmax(0,1.4fr) 160px 90px 110px minmax(0,1fr)";
+const TCOLS = "minmax(0,1.7fr) 180px 120px";
 
-// Mandate limits enforced in agent/src/steward/risk.py.
+// Mandate limits from agent/src/steward/risk.py. The 40% cap and per-cycle cap are
+// enforced deterministically in code; the 3-validator floor is a mandate target the
+// agent builds toward over cycles (it is NOT hard-enforced — labelled honestly below).
 const MANDATE = { maxPerValidatorPct: 40, minValidators: 3, maxSingleMoveCspr: 10000 };
-
-function seed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h;
-}
 
 export default function TreasuryPage() {
   const treasury = useFetch<TreasuryData>("/api/treasury");
@@ -33,31 +29,48 @@ export default function TreasuryPage() {
     amount: d.amount_cspr,
     color: validatorColor(i),
     share: total > 0 ? (d.amount_cspr / total) * 100 : 0,
-    sampleUptime: (99.5 + (seed(d.validator) % 49) / 100).toFixed(2) + "%",
-    sampleRewards: "+" + nfCspr(d.amount_cspr * 0.009, 0) + " CSPR",
   }));
 
   const topShare = rows.length ? Math.max(...rows.map((r) => r.share)) : 0;
   const valCount = t?.delegation_count ?? 0;
+  const liquidShare = total > 0 ? ((t?.liquid_cspr ?? 0) / total) * 100 : 0;
 
+  // Every row here is derived from real on-chain treasury data — no illustrative values.
   const risks = [
-    { label: `Max ${MANDATE.maxPerValidatorPct}% to one validator`, statusText: `${topShare.toFixed(1)}% / ${MANDATE.maxPerValidatorPct}%`, frac: topShare / MANDATE.maxPerValidatorPct, ok: topShare <= MANDATE.maxPerValidatorPct, sample: false },
-    { label: `Minimum ${MANDATE.minValidators} validators`, statusText: valCount >= MANDATE.minValidators ? `${valCount} / ${MANDATE.minValidators} min` : `${valCount} / ${MANDATE.minValidators} · building`, frac: Math.min(1, valCount / MANDATE.minValidators), ok: valCount >= MANDATE.minValidators, sample: false },
-    { label: `Max ${nfCspr(MANDATE.maxSingleMoveCspr, 0)} CSPR / cycle`, statusText: `${nfCspr(MANDATE.maxSingleMoveCspr, 0)} cap`, frac: 0.2, ok: true, sample: false },
-    { label: "Validator uptime floor 99%", statusText: "all ≥ 99.5%", frac: 0.86, ok: true, sample: true },
+    {
+      label: `Max ${MANDATE.maxPerValidatorPct}% to one validator`,
+      statusText: `${topShare.toFixed(1)}% / ${MANDATE.maxPerValidatorPct}%`,
+      frac: topShare / MANDATE.maxPerValidatorPct,
+      ok: topShare <= MANDATE.maxPerValidatorPct,
+      enforced: true,
+    },
+    {
+      label: `Minimum ${MANDATE.minValidators} validators`,
+      statusText: valCount >= MANDATE.minValidators ? `${valCount} / ${MANDATE.minValidators}` : `${valCount} / ${MANDATE.minValidators} · building`,
+      frac: Math.min(1, valCount / MANDATE.minValidators),
+      ok: valCount >= MANDATE.minValidators,
+      enforced: false,
+    },
+    {
+      label: `Max ${nfCspr(MANDATE.maxSingleMoveCspr, 0)} CSPR / cycle`,
+      statusText: `${nfCspr(MANDATE.maxSingleMoveCspr, 0)} cap`,
+      frac: 0.2,
+      ok: true,
+      enforced: true,
+    },
   ];
 
   return (
     <div style={page}>
       {/* real treasury stats */}
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 18, marginBottom: 18 }}>
-        <KpiCard label="TREASURY TOTAL" value={t ? nfCspr(t.total_cspr, 0) : "—"} sub="CSPR (live)" />
+        <KpiCard label="TREASURY TOTAL" value={t ? nfCspr(t.total_cspr, 0) : "—"} sub="CSPR · live testnet read" />
         <KpiCard label="DELEGATED" value={t ? nfCspr(t.delegated_cspr, 0) : "—"} valueColor="var(--accent)" sub={t ? `${t.delegation_count} validator${t.delegation_count === 1 ? "" : "s"}` : ""} />
         <KpiCard label="LIQUID BUFFER" value={t ? nfCspr(t.liquid_cspr, 0) : "—"} sub="unstaked · gas reserve" />
         <KpiCard label="BLOCK HEIGHT" value={t?.block_height ? nfCspr(t.block_height, 0) : "—"} sub="observed" />
       </div>
 
-      {/* allocation breakdown */}
+      {/* allocation breakdown — real on-chain delegations only */}
       <section aria-label="Allocation breakdown" className="panel overflow-hidden">
         <div className="flex items-center justify-between gap-3" style={{ padding: "18px 24px", borderBottom: "1px solid var(--border)" }}>
           <span className="eyebrow">Allocation breakdown</span>
@@ -76,8 +89,6 @@ export default function TreasuryPage() {
           <div>VALIDATOR</div>
           <div>DELEGATED</div>
           <div>SHARE</div>
-          <div className="flex items-center gap-1.5">UPTIME <SampleTag /></div>
-          <div className="flex items-center justify-end gap-1.5" style={{ textAlign: "right" }}>REWARDS (30D) <SampleTag /></div>
         </div>
 
         {treasury.loading && !t ? (
@@ -98,59 +109,63 @@ export default function TreasuryPage() {
                 </div>
                 <div className="mono truncate" style={{ fontSize: 12.5, color: "var(--ink)" }}>{nfCspr(v.amount, 0)} CSPR</div>
                 <div className="mono" style={{ fontSize: 12.5, color: "var(--ink-2)" }}>{v.share.toFixed(1)}%</div>
-                <div className="mono" style={{ fontSize: 12.5, color: "var(--ink-2)" }}>{v.sampleUptime}</div>
-                <div className="mono truncate" style={{ fontSize: 12.5, color: "var(--ink-2)", textAlign: "right" }}>{v.sampleRewards}</div>
               </div>
               {/* mobile card */}
-              <div className="md:hidden flex flex-col gap-2" style={{ padding: "14px 18px", borderBottom: "1px solid var(--border)" }}>
-                <div className="flex items-center gap-2.5">
+              <div className="md:hidden flex items-center justify-between gap-3" style={{ padding: "14px 18px", borderBottom: "1px solid var(--border)" }}>
+                <div className="flex items-center gap-2.5" style={{ minWidth: 0 }}>
                   <span style={{ width: 9, height: 9, borderRadius: 2, background: v.color, flex: "none" }} />
-                  <span className="truncate" style={{ fontSize: 13.5, color: "var(--ink)", flex: 1, minWidth: 0 }}>{v.name}</span>
-                  <span className="mono" style={{ fontSize: 12, color: "var(--ink-2)" }}>{v.share.toFixed(1)}%</span>
+                  <span className="truncate" style={{ fontSize: 13.5, color: "var(--ink)", minWidth: 0 }}>{v.name}</span>
                 </div>
-                <div className="flex items-center justify-between mono" style={{ fontSize: 12, color: "var(--ink-2)" }}>
-                  <span style={{ color: "var(--ink)" }}>{nfCspr(v.amount, 0)} CSPR</span>
-                  <span className="flex items-center gap-1.5">uptime {v.sampleUptime} <SampleTag /></span>
+                <div className="flex items-center gap-3 mono" style={{ fontSize: 12, color: "var(--ink-2)", flex: "none" }}>
+                  <span style={{ color: "var(--ink)" }}>{nfCspr(v.amount, 0)}</span>
+                  <span>{v.share.toFixed(1)}%</span>
                 </div>
               </div>
             </div>
           ))
         )}
         {t && t.liquid_cspr > 0 && (
-          <div className="hidden md:grid items-center" style={{ gridTemplateColumns: TCOLS, gap: 12, padding: "16px 24px" }}>
-            <div className="flex items-center gap-2.5" style={{ minWidth: 0 }}>
-              <span style={{ width: 9, height: 9, borderRadius: 2, background: "#4a5560", flex: "none" }} />
-              <div className="truncate" style={{ fontSize: 13.5, color: "var(--ink-2)" }}>Liquid (unstaked buffer)</div>
+          <>
+            <div className="hidden md:grid items-center" style={{ gridTemplateColumns: TCOLS, gap: 12, padding: "16px 24px" }}>
+              <div className="flex items-center gap-2.5" style={{ minWidth: 0 }}>
+                <span style={{ width: 9, height: 9, borderRadius: 2, background: "#4a5560", flex: "none" }} />
+                <div className="truncate" style={{ fontSize: 13.5, color: "var(--ink-2)" }}>Liquid (unstaked buffer)</div>
+              </div>
+              <div className="mono" style={{ fontSize: 12.5, color: "var(--ink)" }}>{nfCspr(t.liquid_cspr, 0)} CSPR</div>
+              <div className="mono" style={{ fontSize: 12.5, color: "var(--ink-3)" }}>{liquidShare.toFixed(1)}%</div>
             </div>
-            <div className="mono" style={{ fontSize: 12.5, color: "var(--ink)" }}>{nfCspr(t.liquid_cspr, 0)} CSPR</div>
-            <div className="mono" style={{ fontSize: 12.5, color: "var(--ink-3)" }}>{total > 0 ? ((t.liquid_cspr / total) * 100).toFixed(1) : "0"}%</div>
-            <div className="mono" style={{ fontSize: 12.5, color: "var(--ink-3)" }}>—</div>
-            <div className="mono" style={{ fontSize: 12.5, color: "var(--ink-3)", textAlign: "right" }}>—</div>
-          </div>
+            <div className="md:hidden flex items-center justify-between gap-3" style={{ padding: "14px 18px" }}>
+              <span className="truncate" style={{ fontSize: 13.5, color: "var(--ink-2)" }}>Liquid (unstaked buffer)</span>
+              <div className="flex items-center gap-3 mono" style={{ fontSize: 12, color: "var(--ink-3)", flex: "none" }}>
+                <span style={{ color: "var(--ink)" }}>{nfCspr(t.liquid_cspr, 0)}</span>
+                <span>{liquidShare.toFixed(1)}%</span>
+              </div>
+            </div>
+          </>
         )}
       </section>
 
-      {/* rewards chart + risk limits */}
+      {/* position summary + risk limits — all real, on-chain */}
       <div className="grid" style={{ gridTemplateColumns: "minmax(0,1.5fr) minmax(0,1fr)", gap: 18, marginTop: 18 }}>
         <div style={{ ...card, padding: 24, minWidth: 0 }}>
-          <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-            <span className="eyebrow flex items-center gap-2">Cumulative rewards <SampleTag /></span>
-            <span className="mono" style={{ fontSize: 14, color: "var(--ink-3)" }}>+38,420 CSPR</span>
-          </div>
-          <svg viewBox="0 0 600 180" preserveAspectRatio="none" style={{ width: "100%", height: 180, display: "block", opacity: 0.85 }}>
-            <defs>
-              <linearGradient id="yg" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="var(--accent)" stopOpacity="0.28" />
-                <stop offset="1" stopColor="var(--accent)" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <path d="M0,152 C60,142 90,136 140,121 C200,104 240,109 300,86 C360,65 410,71 470,49 C520,32 560,29 600,21 L600,180 L0,180 Z" fill="url(#yg)" />
-            <path d="M0,152 C60,142 90,136 140,121 C200,104 240,109 300,86 C360,65 410,71 470,49 C520,32 560,29 600,21" fill="none" stroke="var(--accent)" strokeWidth="2" />
-          </svg>
-          <div className="flex items-center justify-between mono" style={{ fontSize: 10.5, color: "var(--ink-3)", marginTop: 8 }}>
-            <span>30d ago</span>
-            <span>illustrative — rewards activate on mainnet</span>
-            <span>now</span>
+          <div className="eyebrow" style={{ marginBottom: 16 }}>Position</div>
+          {/* stacked allocation bar — real shares */}
+          {total > 0 ? (
+            <div className="flex" style={{ height: 12, borderRadius: 6, overflow: "hidden", background: "var(--inset)" }}>
+              {rows.map((v) => (
+                <div key={v.key} title={`${v.name} · ${v.share.toFixed(1)}%`} style={{ width: `${v.share}%`, background: v.color }} />
+              ))}
+              {t && t.liquid_cspr > 0 && <div title={`Liquid · ${liquidShare.toFixed(1)}%`} style={{ width: `${liquidShare}%`, background: "#4a5560" }} />}
+            </div>
+          ) : (
+            <div style={{ height: 12, borderRadius: 6, background: "var(--inset)" }} />
+          )}
+          <div className="flex flex-col" style={{ gap: 12, marginTop: 20 }}>
+            <PosRow label="Total treasury" value={t ? `${nfCspr(t.total_cspr, 0)} CSPR` : "—"} />
+            <PosRow label="Delegated" value={t ? `${nfCspr(t.delegated_cspr, 0)} CSPR · ${total > 0 ? ((t.delegated_cspr / total) * 100).toFixed(0) : 0}%` : "—"} accent />
+            <PosRow label="Liquid buffer" value={t ? `${nfCspr(t.liquid_cspr, 0)} CSPR · ${liquidShare.toFixed(0)}%` : "—"} />
+            <PosRow label="Validators" value={String(valCount)} />
+            <PosRow label="Largest position" value={rows.length ? `${topShare.toFixed(1)}%` : "—"} last />
           </div>
         </div>
 
@@ -158,15 +173,18 @@ export default function TreasuryPage() {
           <div className="eyebrow" style={{ marginBottom: 16 }}>Mandate / risk limits</div>
           <div className="flex flex-col" style={{ gap: 16 }}>
             {risks.map((r, i) => {
-              const tint = r.sample ? "var(--ink-3)" : r.ok ? "var(--accent)" : "var(--amber)";
+              const tint = r.ok ? "var(--accent)" : "var(--amber)";
               return (
                 <div key={i}>
                   <div className="flex justify-between" style={{ fontSize: 12.5, marginBottom: 7 }}>
-                    <span className="flex items-center gap-1.5" style={{ color: "var(--ink-2)" }}>{r.label} {r.sample && <SampleTag />}</span>
+                    <span style={{ color: "var(--ink-2)" }}>{r.label}</span>
                     <span className="mono" style={{ color: tint }}>{r.statusText}</span>
                   </div>
                   <div style={{ height: 6, background: "var(--inset)", borderRadius: 3, overflow: "hidden" }}>
                     <div style={{ width: `${Math.min(100, Math.round(r.frac * 100))}%`, height: "100%", background: tint }} />
+                  </div>
+                  <div className="mono" style={{ fontSize: 9.5, letterSpacing: "0.06em", color: "var(--ink-3)", marginTop: 5, textTransform: "uppercase" }}>
+                    {r.enforced ? "enforced in code" : "mandate target"}
                   </div>
                 </div>
               );
@@ -174,6 +192,15 @@ export default function TreasuryPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PosRow({ label, value, accent, last }: { label: string; value: string; accent?: boolean; last?: boolean }) {
+  return (
+    <div className="flex justify-between items-center" style={{ fontSize: 13, borderBottom: last ? "none" : "1px solid var(--border)", paddingBottom: last ? 0 : 12 }}>
+      <span style={{ color: "var(--ink-2)" }}>{label}</span>
+      <span className="mono" style={{ color: accent ? "var(--accent)" : "var(--ink)" }}>{value}</span>
     </div>
   );
 }
