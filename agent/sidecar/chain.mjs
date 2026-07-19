@@ -37,6 +37,7 @@ const {
   ContractCallBuilder,
   Args,
   CLValue,
+  Key,
   EntityIdentifier,
 } = pkg;
 
@@ -332,6 +333,68 @@ async function main() {
       .from(signer.publicKey)
       .byPackageHash(pkgHash)
       .entryPoint("record")
+      .runtimeArgs(args)
+      .chainName(NETWORK)
+      .payment(paymentMotes)
+      .build();
+    return out(await submitSigned(tx, signer));
+  }
+
+  if (verb === "deploy-rwa") {
+    // Deploy the RwaToken (CEP-18-style mock RWA stablecoin) — an Odra install session
+    // whose init() takes (name, symbol, decimals, initial_supply); the deployer (agent)
+    // becomes owner/minter.
+    // deploy-rwa <wasm_path> <name> <symbol> <decimals> <initial_supply> [pkgKeyName] [payment]
+    const wasmPath = req(a[0], "wasm_path");
+    const name = req(a[1], "name");
+    const symbol = req(a[2], "symbol");
+    const decimals = Number(req(a[3], "decimals"));
+    const initialSupply = String(req(a[4], "initial_supply"));
+    const pkgKeyName = a[5] || "steward_rwa_package_hash";
+    const paymentMotes = a[6] ? Number(a[6]) : 300_000_000_000; // 300 CSPR default
+    const wasm = new Uint8Array(fs.readFileSync(wasmPath));
+    const signer = loadSigner();
+    const args = Args.fromMap({
+      odra_cfg_package_hash_key_name: CLValue.newCLString(pkgKeyName),
+      odra_cfg_allow_key_override: CLValue.newCLValueBool(true),
+      odra_cfg_is_upgradable: CLValue.newCLValueBool(false),
+      odra_cfg_is_upgrade: CLValue.newCLValueBool(false),
+      name: CLValue.newCLString(name),
+      symbol: CLValue.newCLString(symbol),
+      decimals: CLValue.newCLUint8(decimals),
+      initial_supply: CLValue.newCLUInt256(initialSupply),
+    });
+    const tx = new SessionBuilder()
+      .from(signer.publicKey)
+      .wasm(wasm)
+      .installOrUpgrade()
+      .runtimeArgs(args)
+      .chainName(NETWORK)
+      .payment(paymentMotes)
+      .build();
+    tx.sign(signer);
+    const res = await rpc().putTransaction(tx);
+    return out({ transaction_hash: hashHex(res.transactionHash), package_key_name: pkgKeyName });
+  }
+
+  if (verb === "rwa-mint") {
+    // Call RwaToken.mint(to: Address, amount: U256) — owner-only (the agent "allocates"
+    // into RWA by minting rwUSD to a holder). Address is a Casper account-hash Key.
+    // rwa-mint <package_hash> <to_public_key_hex> <amount> [payment]
+    const pkgHash = req(a[0], "package_hash").replace(/^(hash-|package-)/, "");
+    const toHex = req(a[1], "to_public_key_hex");
+    const amount = String(req(a[2], "amount"));
+    const paymentMotes = a[3] ? Number(a[3]) : 5_000_000_000; // 5 CSPR default
+    const signer = loadSigner();
+    const toKey = Key.newKey(PublicKey.fromHex(toHex).accountHash().toPrefixedString());
+    const args = Args.fromMap({
+      to: CLValue.newCLKey(toKey),
+      amount: CLValue.newCLUInt256(amount),
+    });
+    const tx = new ContractCallBuilder()
+      .from(signer.publicKey)
+      .byPackageHash(pkgHash)
+      .entryPoint("mint")
       .runtimeArgs(args)
       .chainName(NETWORK)
       .payment(paymentMotes)

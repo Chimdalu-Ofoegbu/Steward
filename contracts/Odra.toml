@@ -1,2 +1,5 @@
 [[contracts]]
 fqn = "journal::Journal"
+
+[[contracts]]
+fqn = "rwa_token::RwaToken"
