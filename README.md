@@ -40,14 +40,14 @@ Steward proves a logged decision is **authentic, unaltered, and was made at time
         5. ACT       native delegate/redelegate       └─────────────────────────┘
                 │  via a Node casper-js-sdk sidecar              ▲ live reads
                 ▼                                                │
-        IPFS (Pinata V3)                          Frontend (Next.js 14)
+        IPFS (Pinata V3)                          Frontend (Next.js 15)
                                                   dashboard · feed · VERIFIER
 ```
 
 - **Chain layer** — `agent/sidecar/chain.mjs`, a Node **casper-js-sdk v5** sidecar (keygen / balance / transfer / delegate / confirm / deploy-wasm / journal-record / auction-info), driven from Python (`agent/src/steward/chain.py`). The **same library** powers the frontend's live reads.
 - **Agent brain** — `agent/src/steward/` (`perceive`, `decide` forced-tool→validated `Decision`, `risk` guardrails, `act`, `attest`, `loop`, `state` SQLite). Mandate in `agent/strategy.md`.
 - **Contract** — `contracts/` Odra 2.8 Journal (`record` + `count`/`get_record` reads + `Recorded` event; the deployer becomes the sole authorized recorder). Unit-tested.
-- **Frontend** — `frontend/` Next.js 14 + Tailwind + casper-js-sdk reads; the Verifier is the centerpiece.
+- **Frontend** — `frontend/` Next.js 15 + Tailwind + casper-js-sdk reads; the Verifier is the centerpiece.
 
 ## Live on testnet (verify it yourself)
 
@@ -88,7 +88,7 @@ agent/.venv/Scripts/python.exe agent/run_cycle.py
 ```
 contracts/   Odra Journal contract (Rust→WASM) + build.sh
 agent/       Python brain + the casper-js-sdk Node sidecar + strategy.md
-frontend/    Next.js 14 dashboard · decision feed · Verifier
+frontend/    Next.js 15 dashboard · decision feed · Verifier
 deployments/testnet.json   live contract hash + agent key + proofs
 docs/DEMO-SCRIPT.md         the video walkthrough
 .planning/   the GSD build trail (research, plans, summaries per phase)

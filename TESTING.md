@@ -45,13 +45,19 @@ The Verifier accepts **any** attestation transaction hash — including cycles y
    ```
 2. Configure `agent/.env` (copy from `agent/.env.example`): set `ANTHROPIC_API_KEY`, `PINATA_JWT`, `CASPER_NODE_RPC`, and `AGENT_SECRET_KEY_PATH`.
 3. Fund your agent key from the **Casper testnet faucet**.
-4. Run one cycle:
+4. **Deploy your own Journal contract.** The on-chain journal is *deployer-bound by design* — `record()` only accepts the key that deployed it. That binding is exactly what makes "recorded by the agent key" a real provenance guarantee, so to attest with *your* key you deploy your own journal:
+   - Build the Odra contract to WASM: `bash contracts/build.sh`.
+   - Deploy it with the sidecar's `deploy-wasm` verb (see `agent/sidecar/chain.mjs`); it prints the new package hash.
+   - Put that hash in `agent/.env` as `JOURNAL_CONTRACT_HASH=<your package hash>`.
+
+   (Skip this only if you were granted recorder rights on an existing journal — otherwise `record()` will revert with `NotAuthorized`.)
+5. Run one cycle:
    ```bash
    # Windows: .venv/Scripts/python   |   macOS/Linux: .venv/bin/python
    .venv/Scripts/python run_cycle.py
    ```
    It prints the IPFS CID, the on-chain decision hash, the attestation txn, and — if it acts — the staking txn.
-5. Verify your own cycle: paste your attestation txn hash into the Verifier at https://aisteward.xyz → expect **MATCH**.
+6. Verify your own cycle: paste your attestation txn hash into the Verifier at https://aisteward.xyz → expect **MATCH** (all steps green, including the block-ordering check).
 
 ---
 
