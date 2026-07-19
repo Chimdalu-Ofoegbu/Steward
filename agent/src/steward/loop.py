@@ -220,5 +220,109 @@ def run_cycle(db_path: str | None = None, model: str | None = None) -> dict:
     return result
 
 
+_RWA_FOCUS = (
+    "\n\n---\n## This cycle: tokenized-RWA allocation\n"
+    "Casper's roadmap is RWA-first. Steward holds a mock RWA stablecoin, **rwUSD** "
+    "(a CEP-18 token live on Casper testnet). For THIS cycle choose the **allocate_rwa** "
+    "action: decide how much rwUSD to allocate (mint), in CSPR-equivalent units, to move "
+    "the treasury toward a prudent tokenized-RWA position, staying within the RWA cap "
+    "(<= 30% of treasury). Call submit_decision with action=\"allocate_rwa\", "
+    "amount_cspr = the rwUSD amount to allocate, and a rationale grounded in the observed "
+    "treasury state. (This is a mock token; the mainnet path is a compliant, permissioned "
+    "ERC-3643-style RWA token.)"
+)
+
+
+def run_rwa_cycle(db_path: str | None = None, model: str | None = None) -> dict:
+    """One tokenized-RWA allocation cycle: perceive -> decide (allocate_rwa) -> risk ->
+    ATTEST (Journal) -> confirm -> mint rwUSD -> record in the feed.
+
+    Same attest-first guarantee as staking (STAK-04): the decision is recorded on-chain,
+    and confirmed, BEFORE any rwUSD is minted.
+    """
+    st = State(db_path)
+    epoch = st.next_epoch()
+    print(f"[steward-rwa] cycle epoch={epoch} — perceiving live chain state...")
+
+    observed = perceive()
+    prompt = _build_prompt(_load_strategy(), observed) + _RWA_FOCUS
+    decision = asyncio.run(decide.decide(prompt, model=model))
+    if decision is None:
+        st.mark_cycle(epoch, "skipped")
+        st.close()
+        print("[steward-rwa] decision malformed/refused -> SKIP cycle, no on-chain write (fail-safe).")
+        return {"epoch": epoch, "status": "skipped", "reason": "malformed_or_refusal"}
+
+    print(f"[steward-rwa] decision: action={decision.action} amount={decision.amount_cspr} confidence={decision.confidence}")
+    print(f"[steward-rwa] rationale: {decision.rationale}")
+
+    verdict = risk.check_decision(decision, observed)
+    print(f"[steward-rwa] risk verdict: {verdict.reason}")
+
+    payload = {
+        "decision": decision.model_dump(),
+        "risk_verdict": verdict.to_dict(),
+        "reasoning": decision.rationale,
+        "observed_state": observed,
+        "strategy_version": "v1",
+        "epoch": epoch,
+    }
+    attestation = chain.record_decision(payload, action_kind=decision.action, epoch=epoch)
+    st.record_attestation(
+        cid=attestation["cid"], hash_hex=attestation["hash"], txn=attestation["txn"],
+        action_kind=decision.action, epoch=epoch,
+    )
+    attest_ok = chain.confirm(attestation["txn"])
+    st.mark_cycle(epoch, "attested" if attest_ok else "attest_unconfirmed")
+    feed.append_entry(feed.build_entry(
+        epoch=epoch, action=decision.action, amount_cspr=decision.amount_cspr, executed_cspr=None,
+        validator=None, confidence=decision.confidence, rationale=decision.rationale,
+        cid=attestation["cid"], decision_hash=attestation["hash"], attestation_txn=attestation["txn"], staking_txn=None,
+    ))
+    print(f"[steward-rwa] IPFS CID:        {attestation['cid']}")
+    print(f"[steward-rwa] on-chain hash:   {attestation['hash']}")
+    print(f"[steward-rwa] ATTESTATION txn: {attestation['txn']}")
+    print(f"[steward-rwa] explorer: {_EXPLORER}/{attestation['txn']}")
+
+    result = {"epoch": epoch, "decision": decision.model_dump(), "risk": verdict.to_dict(), **attestation}
+
+    if not attest_ok:
+        st.close()
+        print("[steward-rwa] attestation NOT confirmed on-chain -> skipping rwUSD mint (fail-safe).")
+        result["status"] = "attest_unconfirmed"
+        return result
+    if not verdict.ok or verdict.action != "allocate_rwa":
+        st.close()
+        print(f"[steward-rwa] no rwUSD mint this cycle ({verdict.reason}). Attested only.")
+        result["status"] = "attested"
+        return result
+
+    try:
+        acted = act.execute(verdict, observed, decision=decision)
+    except Exception as exc:
+        st.mark_cycle(epoch, "act_error")
+        st.close()
+        print(f"[steward-rwa] act.execute (mint) failed: {exc}. Attestation stands; no mint.")
+        result["status"] = "attested"
+        result["reason"] = f"act_failed: {exc}"
+        return result
+
+    mint_txn = acted["txn"]
+    print(f"[steward-rwa] rwUSD MINT: {verdict.amount_cspr} rwUSD  txn={mint_txn}")
+    print(f"[steward-rwa] explorer: {_EXPLORER}/{mint_txn}")
+    confirmed = chain.confirm(mint_txn)
+    st.mark_cycle(epoch, "confirmed" if confirmed else "error")
+    feed.append_entry(feed.build_entry(
+        epoch=epoch, action=decision.action, amount_cspr=decision.amount_cspr, executed_cspr=verdict.amount_cspr,
+        validator=None, confidence=decision.confidence, rationale=decision.rationale,
+        cid=attestation["cid"], decision_hash=attestation["hash"], attestation_txn=attestation["txn"], staking_txn=mint_txn,
+    ))
+    st.close()
+    result["staking_txn"] = mint_txn
+    result["status"] = "acted" if confirmed else "act_unconfirmed"
+    print(f"[steward-rwa] rwUSD mint {'CONFIRMED' if confirmed else 'NOT confirmed (timeout/failure)'}.")
+    return result
+
+
 if __name__ == "__main__":
     run_cycle()

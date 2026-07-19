@@ -88,6 +88,13 @@ def execute(verdict: RiskVerdict, observed_state: dict, decision=None) -> dict:
     if amount_motes <= 0:
         raise ValueError(f"act.execute: non-positive amount_motes={amount_motes}")
 
+    if action == "allocate_rwa":
+        # Mint rwUSD to the agent itself — a mock tokenized-RWA allocation. amount_motes is
+        # the rwUSD base-unit amount (9 decimals, so 1 rwUSD == 1 CSPR-unit).
+        agent = observed_state.get("agent_public_key_hex") or chain.agent_public_key_hex()
+        txn = chain.rwa_mint(agent, amount_motes)
+        return {"action": action, "validator": None, "amount_motes": amount_motes, "txn": txn}
+
     if action == "undelegate":
         # Withdraw from the decision's validator_from (or the verdict target).
         src = None

@@ -28,11 +28,12 @@ MAX_MOVE_CSPR = 10_000.0          # max single move per cycle (no oversized real
 MAX_CONCENTRATION_PCT = 40.0      # max % of total treasury to any one validator
 MIN_VALIDATORS = 3                # diversification floor (enforced over cycles by the 40% cap)
 FEE_BUFFER_CSPR = 10.0            # keep this much CSPR liquid for gas (delegate ~2.5/txn)
+RWA_MAX_PCT = 30.0               # max % of treasury value allocated to tokenized RWA (rwUSD)
 
 MOTES_PER_CSPR = 1_000_000_000
 
 # Actions the agent is permitted to take at all.
-_ALLOWED_ACTIONS = {"delegate", "undelegate", "redelegate", "rebalance", "hold"}
+_ALLOWED_ACTIONS = {"delegate", "undelegate", "redelegate", "rebalance", "allocate_rwa", "hold"}
 # Actions that move CSPR (and therefore require a positive amount + a deploy).
 _MOVE_ACTIONS = {"delegate", "undelegate", "redelegate", "rebalance"}
 
@@ -134,6 +135,44 @@ def check_decision(decision, observed_state: dict) -> RiskVerdict:
             reason="OK: hold — no on-chain action this cycle.",
             action="hold",
             amount_motes=0,
+            proposed_cspr=proposed,
+        )
+
+    # allocate_rwa — mint rwUSD (mock tokenized RWA) up to RWA_MAX_PCT of the treasury.
+    # This is a MOCK allocation (mints an ERC-3643-style token); it does not spend liquid
+    # CSPR, so it has its own cap rather than the delegation/spendable checks below.
+    if action == "allocate_rwa":
+        if proposed <= 0:
+            return RiskVerdict(
+                ok=False,
+                reason=f"REJECT: allocate_rwa requires a positive amount; got {proposed}.",
+                action=None,
+                proposed_cspr=proposed,
+            )
+        total_treasury = _liquid_cspr(observed_state) + _staked_total_cspr(observed_state)
+        cap = (RWA_MAX_PCT / 100.0) * total_treasury
+        amount = min(proposed, cap, MAX_MOVE_CSPR)
+        amount_motes = int(round(amount * MOTES_PER_CSPR))
+        if amount_motes <= 0:
+            return RiskVerdict(
+                ok=False,
+                reason="REJECT: no compliant RWA amount remains after the cap.",
+                action=None,
+                proposed_cspr=proposed,
+            )
+        clamped = amount < proposed
+        reason = (
+            f"CLAMP: approved allocate_rwa of {round(amount, 6)} rwUSD (model proposed {proposed}); "
+            f"capped to {RWA_MAX_PCT}% of {round(total_treasury, 6)} CSPR treasury."
+            if clamped
+            else f"OK: approved allocate_rwa of {round(amount, 6)} rwUSD within the {RWA_MAX_PCT}% RWA cap."
+        )
+        return RiskVerdict(
+            ok=True,
+            reason=reason,
+            action="allocate_rwa",
+            amount_motes=amount_motes,
+            clamped=clamped,
             proposed_cspr=proposed,
         )
 

@@ -219,6 +219,25 @@ def redelegate(old_validator_hex: str, new_validator_hex: str, amount_motes: int
     return _run("redelegate", old_validator_hex, new_validator_hex, amount_motes, timeout=120)["transaction_hash"]
 
 
+def rwa_package_hash() -> str:
+    """The deployed rwUSD (mock RWA CEP-18) package hash (hex, no prefix). Env override wins."""
+    env = os.environ.get("RWA_CONTRACT_HASH")
+    if env:
+        return env.replace("hash-", "").replace("package-", "")
+    pkg = _deployments().get("contracts", {}).get("rwa", {})
+    h = pkg.get("package_hash_hex") or pkg.get("package_hash", "")
+    return h.replace("hash-", "").replace("package-", "")
+
+
+def rwa_mint(to_public_key_hex: str, amount_motes: int) -> str:
+    """Mint rwUSD to a holder (owner-only) — the agent 'allocates' into RWA by minting to
+    itself. `amount_motes` is the rwUSD base-unit amount (9 decimals). Returns the txn hash."""
+    pkg = rwa_package_hash()
+    if not pkg:
+        raise ChainError("rwa package hash unknown (deployments/testnet.json or RWA_CONTRACT_HASH)")
+    return _run("rwa-mint", pkg, to_public_key_hex, amount_motes, timeout=120)["transaction_hash"]
+
+
 def record_decision(payload: dict, action_kind: str, epoch: int) -> dict:
     """Attest a decision on-chain (AGNT-04/05): pin the payload to IPFS, compute
     sha256 of the EXACT pinned bytes, then call the Journal `record(...)` entry

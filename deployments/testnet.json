@@ -23,6 +23,16 @@
         "get_record",
         "agent"
       ]
+    },
+    "rwa": {
+      "name": "Steward RWA USD",
+      "symbol": "rwUSD",
+      "decimals": 9,
+      "package_hash": "hash-4c9c496aa16177129f0fd956a001c7d45d99872031c3dcfe681a7f44e321aa18",
+      "package_hash_hex": "4c9c496aa16177129f0fd956a001c7d45d99872031c3dcfe681a7f44e321aa18",
+      "package_key_name": "steward_rwa_package_hash",
+      "deploy_txn": "5051259fddc329cca68404c12a207ef88acd49091dfadddd11d60aa316b73565",
+      "entry_points": ["init", "name", "symbol", "decimals", "total_supply", "balance_of", "owner", "mint", "transfer"]
     }
   },
   "validators": [

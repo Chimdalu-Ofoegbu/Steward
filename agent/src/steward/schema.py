@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 # Allowed treasury actions for one cycle. The model proposes; deterministic code
 # (Phase 4) disposes — risk limits are enforced AFTER this validates.
-Action = Literal["delegate", "undelegate", "redelegate", "rebalance", "hold"]
+Action = Literal["delegate", "undelegate", "redelegate", "rebalance", "allocate_rwa", "hold"]
 
 # 1) Strict JSON schema the model MUST fill (mirrors the Decision pydantic below).
 DECISION_TOOL = {
@@ -26,7 +26,7 @@ DECISION_TOOL = {
         "properties": {
             "action": {
                 "type": "string",
-                "enum": ["delegate", "undelegate", "redelegate", "rebalance", "hold"],
+                "enum": ["delegate", "undelegate", "redelegate", "rebalance", "allocate_rwa", "hold"],
             },
             "validator_from": {"type": "string"},
             "validator_to": {"type": "string"},
