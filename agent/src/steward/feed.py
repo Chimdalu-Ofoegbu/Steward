@@ -13,7 +13,8 @@ Entry shape (one per attested cycle)::
       "epoch": 1,
       "timestamp": 1782434263,
       "action": "delegate",
-      "amount_cspr": 4000.0,
+      "amount_cspr": 4000.0,           # amount the MODEL proposed
+      "executed_cspr": 1725.0,         # amount actually staked on-chain (null if no move)
       "validator": "0106ca7c…",       # validator_to (or null for hold)
       "confidence": 0.62,
       "rationale": "…",                # model's reasoning (one paragraph)
@@ -72,6 +73,7 @@ def build_entry(
     epoch: int,
     action: str,
     amount_cspr: float,
+    executed_cspr: Optional[float] = None,
     validator: Optional[str],
     confidence: float,
     rationale: str,
@@ -89,6 +91,7 @@ def build_entry(
         "timestamp": timestamp if timestamp is not None else int(_time.time()),
         "action": action,
         "amount_cspr": amount_cspr,
+        "executed_cspr": executed_cspr,
         "validator": validator,
         "confidence": confidence,
         "rationale": rationale,

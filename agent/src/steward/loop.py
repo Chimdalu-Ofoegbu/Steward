@@ -120,15 +120,19 @@ def run_cycle(db_path: str | None = None, model: str | None = None) -> dict:
         action_kind=decision.action,
         epoch=epoch,
     )
-    st.mark_cycle(epoch, "attested")
+    # H1 / STAK-04 (hardened): CONFIRM the attestation landed on-chain BEFORE any staking
+    # move, so "attested before it acts" means confirmed-before, not merely submitted-before.
+    attest_ok = chain.confirm(attestation["txn"])
+    st.mark_cycle(epoch, "attested" if attest_ok else "attest_unconfirmed")
 
-    # FRNT-02 — append to the decision feed the frontend renders. staking_txn is
-    # filled in below once (if) a deploy lands; append now so a hold/rejected
-    # cycle still shows up, then re-append (dedup by hash) with the staking txn.
+    # FRNT-02 — append to the decision feed the frontend renders. executed_cspr stays None
+    # here (nothing has moved yet); staking_txn + executed_cspr are filled below once (if) a
+    # deploy confirms. Append now so a hold/rejected cycle still shows up (dedup by hash).
     feed.append_entry(feed.build_entry(
         epoch=epoch,
         action=decision.action,
         amount_cspr=decision.amount_cspr,
+        executed_cspr=None,
         validator=decision.validator_to,
         confidence=decision.confidence,
         rationale=decision.rationale,
@@ -149,6 +153,15 @@ def run_cycle(db_path: str | None = None, model: str | None = None) -> dict:
         "risk": verdict.to_dict(),
         **attestation,
     }
+
+    # H1 fail-safe: if the attestation did not confirm on-chain, do NOT act — there would be
+    # no valid on-chain record preceding the move. The attestation stands as submitted.
+    if not attest_ok:
+        st.close()
+        print("[steward] attestation NOT confirmed on-chain -> skipping staking deploy (fail-safe).")
+        result["status"] = "attest_unconfirmed"
+        result["reason"] = "attestation_unconfirmed"
+        return result
 
     # 5) ACT — only an approved, actionable verdict produces a real deploy.
     if not verdict.ok or verdict.action in (None, "hold"):
@@ -183,11 +196,13 @@ def run_cycle(db_path: str | None = None, model: str | None = None) -> dict:
     st.clear_pending(staking_txn)
     st.mark_cycle(epoch, "confirmed" if confirmed else "error")
 
-    # Re-append the feed entry with the staking txn now known (dedup by hash).
+    # Re-append the feed entry with the staking txn + the EXECUTED (risk-clamped) amount now
+    # known (dedup by hash). executed_cspr is what actually moved on-chain — may be < proposed.
     feed.append_entry(feed.build_entry(
         epoch=epoch,
         action=decision.action,
         amount_cspr=decision.amount_cspr,
+        executed_cspr=verdict.amount_cspr,
         validator=acted.get("validator") or decision.validator_to,
         confidence=decision.confidence,
         rationale=decision.rationale,
