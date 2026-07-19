@@ -40,7 +40,7 @@ The Verifier accepts **any** attestation transaction hash — including cycles y
    cd Steward/agent
    python -m venv .venv
    # Windows: .venv/Scripts/pip   |   macOS/Linux: .venv/bin/pip
-   .venv/Scripts/pip install anthropic httpx pydantic python-dotenv
+   .venv/Scripts/pip install anthropic httpx pydantic python-dotenv "mcp[cli]"
    cd sidecar && npm install && cd ..
    ```
 2. Configure `agent/.env` (copy from `agent/.env.example`): set `ANTHROPIC_API_KEY`, `PINATA_JWT`, `CASPER_NODE_RPC`, and `AGENT_SECRET_KEY_PATH`.

@@ -6,6 +6,8 @@ Steward perceives live on-chain state, decides a treasury action under a fixed s
 
 **The whole loop is live on Casper testnet today.** Not a mock.
 
+**Vision, mainnet roadmap & business model:** [`docs/LAUNCH.md`](docs/LAUNCH.md) · **Test / verify it yourself:** [`TESTING.md`](TESTING.md)
+
 ---
 
 ## The three pillars (this track's ask), all real
@@ -48,6 +50,26 @@ Steward proves a logged decision is **authentic, unaltered, and was made at time
 - **Agent brain** — `agent/src/steward/` (`perceive`, `decide` forced-tool→validated `Decision`, `risk` guardrails, `act`, `attest`, `loop`, `state` SQLite). Mandate in `agent/strategy.md`.
 - **Contract** — `contracts/` Odra 2.8 Journal (`record` + `count`/`get_record` reads + `Recorded` event; the deployer becomes the sole authorized recorder). Unit-tested.
 - **Frontend** — `frontend/` Next.js 15 + Tailwind + casper-js-sdk reads; the Verifier is the centerpiece.
+- **Agentic surface** — `agent/mcp_server.py`, an **MCP server** (Casper AI Toolkit pattern) exposing Steward's state to any LLM; skill manifest in `agent/SKILL.md`.
+
+## Agentic surface — MCP (Casper AI Toolkit)
+
+Steward exposes its live treasury and its **verifiable decision journal** as a read-only **MCP server** any LLM agent can call — the toolkit's "expose Casper state to an LLM" pattern, pointed at Steward's own state:
+
+| Tool | Returns |
+|---|---|
+| `get_treasury` | live liquid + delegated CSPR, per-validator delegations |
+| `get_validators` | top active validators by weight |
+| `list_decisions` | recent attested decisions (proposed vs. executed, hash, txn, verify URL) |
+| `get_decision(hash)` | one decision in full + links to verify it on-chain |
+
+Register it (Claude Desktop / Claude Code):
+
+```json
+{ "mcpServers": { "steward": { "command": "python", "args": ["<abs-path>/agent/mcp_server.py"] } } }
+```
+
+Every decision the tools return carries a `verify_url` that recomputes `sha256(IPFS reasoning) == on-chain hash` — so an agent querying Steward can **verify, not trust**. *(An x402-metered variant — other agents pay to read the journal — is on the roadmap; see [`docs/LAUNCH.md`](docs/LAUNCH.md).)*
 
 ## Live on testnet (verify it yourself)
 
