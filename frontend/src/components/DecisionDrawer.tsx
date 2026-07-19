@@ -281,6 +281,8 @@ export function summarize(e: JournalEntry): string {
       return `Redelegated ${amt} CSPR → ${v}`;
     case "rebalance":
       return `Rebalanced ${amt} CSPR across validators`;
+    case "allocate_rwa":
+      return `Allocated ${amt} rwUSD to tokenized RWA`;
     default:
       return "Held position — no action this cycle";
   }

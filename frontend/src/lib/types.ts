@@ -5,6 +5,7 @@ export type ActionKind =
   | "undelegate"
   | "redelegate"
   | "rebalance"
+  | "allocate_rwa"
   | "hold";
 
 export interface JournalEntry {
@@ -38,6 +39,8 @@ export interface TreasuryData {
   liquid_cspr: number;
   delegated_cspr: number;
   total_cspr: number;
+  /** Tokenized-RWA position (rwUSD) the agent holds, from its attested allocate_rwa mints. */
+  rwusd_cspr?: number;
   delegations: DelegationInfo[];
   validators: ValidatorInfo[];
   delegation_count: number;

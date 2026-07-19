@@ -185,6 +185,8 @@ function summary(e: JournalEntry): string {
       return `Redelegated ${amt} CSPR`;
     case "rebalance":
       return `Rebalanced ${amt} CSPR`;
+    case "allocate_rwa":
+      return `Allocated ${amt} rwUSD to RWA`;
     default:
       return "Held position";
   }

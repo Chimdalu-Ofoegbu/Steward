@@ -68,6 +68,7 @@ export default function TreasuryPage() {
         <KpiCard label="DELEGATED" value={t ? nfCspr(t.delegated_cspr, 0) : "—"} valueColor="var(--accent)" sub={t ? `${t.delegation_count} validator${t.delegation_count === 1 ? "" : "s"}` : ""} />
         <KpiCard label="LIQUID BUFFER" value={t ? nfCspr(t.liquid_cspr, 0) : "—"} sub="unstaked · gas reserve" />
         <KpiCard label="BLOCK HEIGHT" value={t?.block_height ? nfCspr(t.block_height, 0) : "—"} sub="observed" />
+        <KpiCard label="TOKENIZED RWA" value={t && t.rwusd_cspr ? nfCspr(t.rwusd_cspr, 0) : "—"} sub="rwUSD · mock CEP-18" />
       </div>
 
       {/* allocation breakdown — real on-chain delegations only */}
@@ -165,6 +166,7 @@ export default function TreasuryPage() {
             <PosRow label="Delegated" value={t ? `${nfCspr(t.delegated_cspr, 0)} CSPR · ${total > 0 ? ((t.delegated_cspr / total) * 100).toFixed(0) : 0}%` : "—"} accent />
             <PosRow label="Liquid buffer" value={t ? `${nfCspr(t.liquid_cspr, 0)} CSPR · ${liquidShare.toFixed(0)}%` : "—"} />
             <PosRow label="Validators" value={String(valCount)} />
+            <PosRow label="Tokenized RWA" value={t?.rwusd_cspr ? `${nfCspr(t.rwusd_cspr, 0)} rwUSD` : "0 rwUSD"} />
             <PosRow label="Largest position" value={rows.length ? `${topShare.toFixed(1)}%` : "—"} last />
           </div>
         </div>

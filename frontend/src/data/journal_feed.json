@@ -54,5 +54,19 @@
     "decision_hash": "f55f2e15439e8495397922758b17cdfc6c48115dac7bf0dd96cddf4c9c744db1",
     "attestation_txn": "4ebe2680a7c65d2f2332564c5d3545a3c2f9ab178eb3e131ef2e01147e445d04",
     "staking_txn": "b5e0a14a3512ee14beae48ff4dc6a82ccc58416cf588be21122478f04de83745"
+  },
+  {
+    "epoch": 6,
+    "timestamp": 1784431682,
+    "action": "allocate_rwa",
+    "amount_cspr": 204.0,
+    "executed_cspr": 204.0,
+    "validator": null,
+    "confidence": 0.7,
+    "rationale": "Total treasury is ~4,136.7 CSPR (1,728.36 + 1,708.84 staked + 699.48 liquid). The RWA cap is 30% of treasury (~1,241 CSPR). I allocate a prudent ~5% of total treasury (~204 CSPR) to rwUSD — well within the 30% cap — funded from the 699.48 CSPR liquid balance while leaving a comfortable gas buffer and ample liquidity for future delegation to reach the 3-validator diversification floor. This establishes a conservative initial tokenized-RWA position (capital preservation first) without over-committing liquid funds, keeping room to expand the RWA sleeve over subsequent cycles as the position proves out.",
+    "cid": "bafkreibfyo2rrgbk5kgnszhfsyxyf7r3auimu7auvls4cfesndack53av4",
+    "decision_hash": "25c3b518982aea8cd964e5962f82fe3b0510ca7c14aae5c1149268c0257760af",
+    "attestation_txn": "931c342c6c34d32907170e106a81cce82fd770657e4f37afde9540813a0de6e2",
+    "staking_txn": "2534639b3c7f271084676d3bb6dea219147b7ab63f6128de3a5bfd1b53f09168"
   }
 ]

@@ -34,6 +34,15 @@ async function delegationsFromJournal(): Promise<DelegationInfo[]> {
     .map(([validator, amount_cspr]) => ({ validator, amount_cspr }));
 }
 
+/** The agent's tokenized-RWA position (rwUSD), summed from its attested allocate_rwa mints. */
+async function rwusdFromJournal(): Promise<number> {
+  const rows = await loadJournalFeed();
+  return rows.reduce(
+    (s, e) => s + (e.action === "allocate_rwa" && e.staking_txn ? (e.executed_cspr ?? e.amount_cspr) : 0),
+    0,
+  );
+}
+
 export async function GET() {
   const agentHex = CONFIG.agentPublicKeyHex;
   const errors: string[] = [];
@@ -66,12 +75,14 @@ export async function GET() {
   }
 
   const delegated = delegations.reduce((a, d) => a + d.amount_cspr, 0);
+  const rwusd = await rwusdFromJournal();
 
   const data: TreasuryData = {
     agent_public_key_hex: agentHex,
     liquid_cspr: liquid,
     delegated_cspr: delegated,
     total_cspr: liquid + delegated,
+    rwusd_cspr: rwusd,
     delegations,
     validators: auction.validators,
     delegation_count: delegations.length,
