@@ -11,6 +11,12 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "casper-js-sdk": "^5.0.12"
+    "@casper-ecosystem/casper-eip-712": "^1.2.1",
+    "@make-software/casper-x402": "^1.0.0",
+    "@x402/core": "^2.19.0",
+    "@x402/express": "^2.19.0",
+    "@x402/fetch": "^2.19.0",
+    "casper-js-sdk": "^5.0.12",
+    "express": "^5.2.1"
   }
 }

@@ -69,7 +69,7 @@ Register it (Claude Desktop / Claude Code):
 { "mcpServers": { "steward": { "command": "python", "args": ["<abs-path>/agent/mcp_server.py"] } } }
 ```
 
-Every decision the tools return carries a `verify_url` that recomputes `sha256(IPFS reasoning) == on-chain hash` — so an agent querying Steward can **verify, not trust**. *(An x402-metered variant — other agents pay to read the journal — is on the roadmap; see [`docs/LAUNCH.md`](docs/LAUNCH.md).)*
+Every decision the tools return carries a `verify_url` that recomputes `sha256(IPFS reasoning) == on-chain hash` — so an agent querying Steward can **verify, not trust**. *(Steward also sells this journal to other agents over **x402** — Casper's machine-payment primitive — settled in WCSPR, gas-free via the hosted facilitator; see [`docs/X402.md`](docs/X402.md).)*
 
 ## Live on testnet (verify it yourself)
 
