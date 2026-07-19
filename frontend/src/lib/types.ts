@@ -19,6 +19,8 @@ export interface JournalEntry {
   decision_hash: string;
   attestation_txn: string;
   staking_txn: string | null;
+  /** CSPR actually staked on-chain this cycle (null if the cycle attested but moved no funds). */
+  executed_cspr?: number | null;
 }
 
 export interface ValidatorInfo {
@@ -52,6 +54,11 @@ export interface TreasuryData {
 
 export interface VerifyResult {
   ok: boolean;
+  /** Integrity holds against the pinned IPFS bytes, but on-chain provenance could not be
+   *  confirmed this moment (e.g. the node read failed). Amber, not green — never a pass. */
+  integrity_only?: boolean;
+  /** Attestation block <= staking block (the "attested before it acted" ordering). */
+  ordering_ok?: boolean;
   steps: VerifyStep[];
   computed_hash?: string;
   onchain_hash?: string;
@@ -66,5 +73,5 @@ export interface VerifyStep {
   id: string;
   title: string;
   detail: string;
-  status: "ok" | "fail" | "pending";
+  status: "ok" | "warn" | "fail" | "pending";
 }

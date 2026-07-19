@@ -195,6 +195,7 @@ export interface OnChainTxn {
   found: boolean;
   success: boolean;
   block_hash: string | null;
+  block_height: number | null;
   initiator: string | null;
   args: Record<string, string>;
   error?: string | null;
@@ -208,14 +209,23 @@ export interface OnChainTxn {
  */
 export async function getJournalTransaction(txnHash: string): Promise<OnChainTxn> {
   try {
-    const res: any = await rpc().getTransactionByTransactionHash(txnHash);
+    // Retry transient node flakes — the public node intermittently 413s / times out even a
+    // single tx read. Each attempt is capped so a genuinely dead read degrades to amber fast.
+    const res: any = await withRetry(() => withTimeout(rpc().getTransactionByTransactionHash(txnHash), 6000), 3, 400);
     const raw = res?.rawJSON ?? res ?? {};
-    const txWrap = raw.transaction ?? raw.Transaction ?? res?.transaction ?? {};
-    const info = res.executionInfo ?? res.execution_info ?? raw.execution_info ?? null;
-    const exec = info?.executionResult ?? info?.execution_result ?? null;
-    const errMsg = exec?.errorMessage ?? exec?.error_message ?? null;
-    const blockHashRaw = info?.blockHash ?? info?.block_hash ?? null;
+    // A real transaction body — null when the node returned nothing. NEVER default to {},
+    // which is truthy and would read as "found" for an empty/failed response.
+    const txWrap = raw.transaction ?? raw.Transaction ?? res?.transaction ?? null;
+    // Prefer the raw JSON's execution_info (stable, documented shape); fall back to the SDK object.
+    const info = raw.execution_info ?? res?.executionInfo ?? res?.execution_info ?? null;
+    const execRaw = info?.execution_result ?? info?.executionResult ?? null;
+    // Casper 2.0 wraps the result under Version2 (or Version1); the error lives inside.
+    const execInner = execRaw?.Version2 ?? execRaw?.Version1 ?? execRaw ?? null;
+    const errMsg = execInner?.error_message ?? execInner?.errorMessage ?? null;
+    const blockHashRaw = info?.block_hash ?? info?.blockHash ?? null;
     const blockHash = blockHashRaw != null ? hashHex(blockHashRaw) : null;
+    const bhRaw = info?.block_height ?? info?.blockHeight ?? null;
+    const blockHeight = bhRaw == null ? null : Number(bhRaw);
 
     // Extract initiator + runtime args defensively from the raw transaction JSON.
     const v1 = txWrap?.Version1 ?? txWrap?.version1 ?? txWrap;
@@ -223,9 +233,13 @@ export async function getJournalTransaction(txnHash: string): Promise<OnChainTxn
     const args = extractArgs(v1);
 
     return {
-      found: !!info || !!txWrap,
-      success: !errMsg,
+      // Honest: only "found" when a real transaction body is present.
+      found: !!txWrap,
+      // Honest: "success" requires an execution result carrying no error — not merely the
+      // ABSENCE of an error field on an empty response.
+      success: !!execInner && !errMsg,
       block_hash: blockHash ? String(blockHash) : null,
+      block_height: Number.isFinite(blockHeight) ? blockHeight : null,
       initiator,
       args,
       error: errMsg ?? null,
@@ -235,6 +249,7 @@ export async function getJournalTransaction(txnHash: string): Promise<OnChainTxn
       found: false,
       success: false,
       block_hash: null,
+      block_height: null,
       initiator: null,
       args: {},
       error: String(e?.message ?? e).slice(0, 200),

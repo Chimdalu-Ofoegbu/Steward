@@ -12,10 +12,16 @@ const loadFeed = loadJournalFeed;
 
 /**
  * Verify an attestation: integrity (sha256 of the RAW pinned bytes == on-chain
- * decision_hash) + provenance (attested by the agent key, in a real block).
+ * decision_hash) + provenance (attested by the agent key, in a real successful block).
  *
- * Hashing rule (BUILD-PROMPT A.4): we sha256 the EXACT raw gateway bytes — never
- * a re-parsed/re-stringified JSON — so the digest matches what the agent recorded.
+ * Honesty rule (BUILD-PROMPT A.4): we sha256 the EXACT raw gateway bytes — never a
+ * re-parsed/re-stringified JSON — so the digest matches what the agent recorded.
+ *
+ * GREEN (result.ok) is asserted ONLY when the digest equals the hash the agent recorded
+ * ON-CHAIN, in a successful transaction signed by the agent key. A locally-recorded or
+ * user-pasted hash is NEVER used as the provenance reference — at most it is a weak
+ * integrity cross-check that renders AMBER (result.integrity_only), never green. This is
+ * the whole point: "don't trust the app — the proof is on-chain."
  */
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams;
@@ -37,6 +43,8 @@ export async function GET(req: NextRequest) {
 
   const cid = rec?.cid || cidParam;
   const attestationTxn = rec?.attestation_txn || txnParam;
+  // The recorded hash is used ONLY as a weak (amber) integrity cross-check when the chain
+  // read is unavailable. It is never sufficient for a green/provenance result.
   const recordedHash = rec?.decision_hash || hashParam;
 
   if (!cid && !attestationTxn) {
@@ -50,37 +58,65 @@ export async function GET(req: NextRequest) {
   let onChainCid: string | undefined;
   let agentKey: string | undefined;
   let blockHash: string | null = null;
+  let attBlockHeight: number | null = null;
+  let txFound = false;
+  let txSuccess = false;
+  let byAgentStrict = false;
   if (attestationTxn) {
     const tx = await getJournalTransaction(attestationTxn);
     blockHash = tx.block_hash;
+    attBlockHeight = tx.block_height;
     agentKey = tx.initiator ?? undefined;
     onChainHash = tx.args["decision_hash"] || undefined;
     onChainCid = tx.args["ipfs_cid"] || undefined;
-    const byAgent = !agentKey || agentKey.toLowerCase() === CONFIG.agentPublicKeyHex.toLowerCase();
-    if (tx.found && tx.success && byAgent) {
+    txFound = tx.found;
+    txSuccess = tx.success;
+    // STRICT: the initiator must be present AND equal the agent key. No "unknown ⇒ trusted"
+    // default (that was the hole that let a green result through with no real provenance).
+    byAgentStrict = !!agentKey && agentKey.toLowerCase() === CONFIG.agentPublicKeyHex.toLowerCase();
+
+    if (txFound && txSuccess && byAgentStrict) {
       steps.push({
         id: "onchain",
         title: "Attestation found on-chain",
         detail: `Recorded by the agent key${blockHash ? ` in block ${blockHash.slice(0, 10)}…` : ""} via the Journal contract.`,
         status: "ok",
       });
-    } else if (tx.found) {
+    } else if (txFound && !byAgentStrict) {
       steps.push({
         id: "onchain",
         title: "Attestation found on-chain",
-        detail: byAgent
-          ? "Transaction located on-chain."
-          : `Initiator ${agentKey} does not match the agent key.`,
-        status: byAgent ? "ok" : "fail",
+        detail: agentKey
+          ? `Initiator ${agentKey.slice(0, 12)}… does not match the agent key — provenance NOT confirmed.`
+          : "Could not read the transaction initiator to confirm the agent key.",
+        status: "fail",
       });
-    } else {
+    } else if (txFound && !txSuccess) {
       steps.push({
         id: "onchain",
         title: "Attestation lookup",
-        detail: tx.error || "Transaction not found on-chain.",
-        status: "fail",
+        detail: tx.error || "The attestation transaction has no successful execution result yet.",
+        status: "warn",
+      });
+    } else {
+      // Distinguish a DEFINITIVE miss (node says "no such transaction") from a TRANSIENT
+      // read failure (413 / timeout). The former is a real fail; the latter is amber-retry.
+      const err = tx.error || "";
+      const definitivelyMissing = !err || /no such transaction|-32014|not found/i.test(err);
+      steps.push({
+        id: "onchain",
+        title: "Attestation lookup",
+        detail: definitivelyMissing ? "Transaction not found on-chain." : `On-chain read unavailable (${err.slice(0, 80)}) — retry.`,
+        status: definitivelyMissing ? "fail" : "warn",
       });
     }
+  } else {
+    steps.push({
+      id: "onchain",
+      title: "Attestation lookup",
+      detail: "No attestation transaction supplied — provenance cannot be confirmed.",
+      status: "warn",
+    });
   }
 
   // ── Step 2: fetch RAW pinned bytes for the CID ───────────────────────────
@@ -106,32 +142,69 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // ── Step 3: integrity — sha256(raw bytes) == on-chain decision_hash ──────
+  // ── Step 3: integrity — sha256(raw bytes) == decision_hash ───────────────
   let computed: string | undefined;
+  const ipfsOk = steps.some((s) => s.id === "ipfs" && s.status === "ok");
   if (rawBytes) {
     computed = createHash("sha256").update(rawBytes).digest("hex");
-    // Compare to the strongest available reference: on-chain hash, else recorded.
+    const strong = !!onChainHash; // do we have the hash straight from the chain?
     const reference = onChainHash || recordedHash;
-    const match = !!reference && computed.toLowerCase() === reference.toLowerCase();
+    const integrityMatch = !!reference && computed.toLowerCase() === reference.toLowerCase();
     steps.push({
       id: "integrity",
-      title: "Integrity — sha256(raw bytes) matches on-chain hash",
-      detail: match
-        ? "The pinned payload hashes to exactly the digest recorded on-chain. Unaltered."
-        : `Computed ${computed.slice(0, 16)}… ≠ recorded ${(reference || "").slice(0, 16)}…`,
-      status: match ? "ok" : "fail",
+      title: strong
+        ? "Integrity — sha256(raw bytes) matches the on-chain hash"
+        : "Integrity — sha256(raw bytes) matches the recorded hash",
+      detail: integrityMatch
+        ? strong
+          ? "The pinned payload hashes to exactly the digest recorded on-chain. Unaltered."
+          : "The pinned payload matches the recorded digest. On-chain confirmation is momentarily unavailable — retry to confirm against the chain."
+        : `Computed ${computed.slice(0, 16)}… ≠ ${strong ? "on-chain" : "recorded"} ${(reference || "").slice(0, 16)}…`,
+      status: integrityMatch ? (strong ? "ok" : "warn") : "fail",
     });
-    // The integrity match is the canonical proof. The on-chain lookup adds
-    // provenance, but the RPC can momentarily return a txn before its execution
-    // info is attached — that must not flip a genuine hash match to "failed".
-    // Require: integrity matched AND IPFS+integrity steps clean AND (if the
-    // on-chain hash was read) it equals the computed digest.
-    const hardFail = steps.some((s) => (s.id === "ipfs" || s.id === "integrity") && s.status === "fail");
-    const onChainConsistent = !onChainHash || onChainHash.toLowerCase() === computed.toLowerCase();
-    result.ok = match && !hardFail && onChainConsistent;
+
+    // Provenance is real ONLY with a genuine on-chain hash from the agent's successful txn.
+    const onChainProven =
+      !!onChainHash && txFound && txSuccess && byAgentStrict && computed.toLowerCase() === onChainHash.toLowerCase();
+    result.ok = onChainProven && ipfsOk;
+    result.integrity_only = !result.ok && integrityMatch && ipfsOk;
   }
 
-  // ── Step 4: provenance summary ───────────────────────────────────────────
+  // ── Step 4: ordering — the attestation block precedes the staking move (H2) ──
+  if (rec?.staking_txn && attBlockHeight != null) {
+    try {
+      const stx = await getJournalTransaction(rec.staking_txn);
+      if (stx.found && stx.block_height != null) {
+        const ordered = attBlockHeight <= stx.block_height;
+        result.ordering_ok = ordered;
+        steps.push({
+          id: "ordering",
+          title: "Ordering — attestation preceded the action",
+          detail: ordered
+            ? `Attestation block ${attBlockHeight} ≤ staking block ${stx.block_height}: the agent recorded WHY before it acted.`
+            : `Attestation block ${attBlockHeight} > staking block ${stx.block_height}: ordering could NOT be confirmed.`,
+          status: ordered ? "ok" : "fail",
+        });
+        if (!ordered) result.ok = false;
+      } else {
+        steps.push({
+          id: "ordering",
+          title: "Ordering check",
+          detail: "Staking-transaction block unavailable this moment — retry to confirm ordering.",
+          status: "warn",
+        });
+      }
+    } catch {
+      steps.push({
+        id: "ordering",
+        title: "Ordering check",
+        detail: "Could not read the staking transaction block this moment — retry.",
+        status: "warn",
+      });
+    }
+  }
+
+  // ── Step 5: provenance summary ───────────────────────────────────────────
   if (result.ok) {
     steps.push({
       id: "provenance",
@@ -142,11 +215,11 @@ export async function GET(req: NextRequest) {
   }
 
   result.computed_hash = computed;
-  result.onchain_hash = onChainHash || recordedHash;
+  result.onchain_hash = onChainHash; // ONLY the real on-chain hash — never the pasted/recorded one
   result.onchain_cid = onChainCid || cid;
   result.attestation_txn = attestationTxn;
   result.block_hash = blockHash;
-  result.agent_key = agentKey || CONFIG.agentPublicKeyHex;
+  result.agent_key = byAgentStrict ? agentKey : undefined; // don't assert an unverified key
 
   return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
 }

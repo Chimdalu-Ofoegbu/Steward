@@ -143,13 +143,25 @@ function Steps({ result, target }: { result: VerifyResult; target: JournalEntry 
           </div>
         </div>
       )}
+      {!result.ok && result.integrity_only && (
+        <div className="flex items-start gap-2.5" style={{ background: "var(--amber-dim)", border: "1px solid color-mix(in srgb, var(--amber) 32%, transparent)", borderRadius: 10, padding: "12px 14px" }}>
+          <span style={{ fontSize: 16, color: "var(--amber)" }}>!</span>
+          <div>
+            <div className="mono" style={{ fontSize: 13, fontWeight: 700, color: "var(--amber)" }}>INTEGRITY OK · ON-CHAIN CONFIRMATION UNAVAILABLE</div>
+            <div style={{ fontSize: 11.5, color: "var(--ink-2)", marginTop: 2 }}>
+              The pinned bytes match the recorded digest. The on-chain read is momentarily unavailable (the public node rate-limits the lookup) — retry to confirm provenance against the chain.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function StepIcon({ status }: { status: "ok" | "fail" | "pending" }) {
+function StepIcon({ status }: { status: "ok" | "warn" | "fail" | "pending" }) {
   const map = {
     ok: { ch: "✓", color: "var(--accent-ink)", ring: "var(--accent)", bg: "var(--accent)" },
+    warn: { ch: "!", color: "#0b0d0c", ring: "var(--amber)", bg: "var(--amber)" },
     fail: { ch: "✕", color: "#fff", ring: "var(--red)", bg: "var(--red)" },
     pending: { ch: "○", color: "var(--ink-3)", ring: "var(--border-2)", bg: "transparent" },
   }[status];
@@ -161,7 +173,9 @@ function StepIcon({ status }: { status: "ok" | "fail" | "pending" }) {
 }
 
 function summary(e: JournalEntry): string {
-  const amt = Math.round(e.amount_cspr).toLocaleString("en-US");
+  if (e.action === "hold") return "Held position";
+  if (!e.staking_txn) return `Attested ${e.action} · ${Math.round(e.amount_cspr).toLocaleString("en-US")} CSPR (no move)`;
+  const amt = Math.round(e.executed_cspr ?? e.amount_cspr).toLocaleString("en-US");
   switch (e.action) {
     case "delegate":
       return `Delegated ${amt} CSPR`;
