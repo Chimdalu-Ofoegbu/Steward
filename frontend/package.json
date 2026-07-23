@@ -12,7 +12,7 @@
     "casper-js-sdk": "5.0.12",
     "clsx": "2.1.1",
     "next": "^15.5.20",
-    "react": "^19.2.7",
+    "react": "^19.2.8",
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
